@@ -1,0 +1,35 @@
+{
+  "name": "onbus",
+  "version": "1.0.0",
+  "description": "OnBus - Sistema Inteligente de Bilhetagem e Mobilidade Urbana",
+  "main": "backend/src/server.ts",
+  "scripts": {
+    "dev": "tsx watch backend/src/server.ts",
+    "cli": "tsx backend/src/cli.ts",
+    "setup": "tsx backend/src/database/setup.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/T4vinh0h/Projeto-OnBus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.10.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "knex": "^3.2.10"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.8.3"
+  }
+}
