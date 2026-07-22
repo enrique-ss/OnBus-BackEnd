@@ -148,7 +148,7 @@ async function menuDeslogado() {
   console.log('  1. 📝 Registrar Novo Passageiro');
   console.log('  2. 🔑 Entrar');
   console.log('  3. 📅 Consultar Itinerários de Pelotas');
-  console.log('  4. ❌ Sair');
+  console.log('  0. ❌ Sair');
   printFooter();
 
   const opt = await question('Escolha uma opção: ');
@@ -162,7 +162,7 @@ async function menuDeslogado() {
     case '3':
       await verItinerarios();
       break;
-    case '4':
+    case '0':
       console.log('Até mais! Obrigado por usar o OnBus.');
       rl.close();
       process.exit(0);
@@ -211,7 +211,6 @@ async function menuCartoes() {
     console.log('  4. 🔒 Bloquear Cartão');
     console.log('  5. 🔄 Solicitar Segunda Via');
     console.log('  6. 📊 Ver Extrato');
-    console.log('  7. 🔗 Confirmar Recarga');
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
@@ -237,9 +236,6 @@ async function menuCartoes() {
       case '6':
         await verHistorico();
         break;
-      case '7':
-        await simularWebhookPix();
-        break;
       case '0':
         return;
       default:
@@ -253,8 +249,6 @@ async function menuValidador() {
   while (true) {
     printHeader('Validador');
     console.log('  1. 🚌 Simular Embarque');
-    console.log('  2. 🔌 Alternar Conexão');
-    console.log('  3. 🔄 Sincronizar Transações');
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
@@ -263,12 +257,39 @@ async function menuValidador() {
       case '1':
         await simularValidador();
         break;
-      case '2':
+      case '0':
+        return;
+      default:
+        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+        await question('');
+    }
+  }
+}
+
+async function menuConexao() {
+  while (true) {
+    printHeader('Conexão e Rede');
+    console.log('  1. 🔌 Alternar Conexão (Online / Offline)');
+    console.log('  2. 🔄 Sincronizar Transações Pendentes');
+    console.log('  0. ⬅️  Voltar ao Menu Principal');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+    switch (opt.trim()) {
+      case '1':
         isValidadorOnline = !isValidadorOnline;
-        console.log(`\n${colors.fgYellow}Status do validador alterado para: ${isValidadorOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴'}${colors.reset}`);
-        await new Promise(r => setTimeout(r, 1200));
+        console.log(`\n${colors.fgYellow}Status da conexão alterado para: ${isValidadorOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴'}${colors.reset}`);
+        
+        // Se voltou para ONLINE e há mensagens pendentes no JSON reserva, sincroniza automaticamente
+        if (isValidadorOnline && offlineTransactions.length > 0) {
+          console.log(`\n${colors.bright}${colors.fgCyan}📡 Sinal de rede restabelecido! Sincronizando automaticamente ${offlineTransactions.length} transação(ões) salva(s) no JSON reserva...${colors.reset}`);
+          await new Promise(r => setTimeout(r, 1000));
+          await sincronizarOffline(true);
+        } else {
+          await new Promise(r => setTimeout(r, 1200));
+        }
         break;
-      case '3':
+      case '2':
         await sincronizarOffline();
         break;
       case '0':
@@ -289,8 +310,9 @@ async function menuLogado() {
   console.log('  1. 👤 Meu Perfil');
   console.log('  2. 💳 Gerenciar Cartões');
   console.log('  3. 🚌 Validador');
-  console.log('  4. 📅 Consultar Itinerários de Pelotas');
-  console.log('  5. 🚪 Sair');
+  console.log('  4. 🌐 Conexão e Rede');
+  console.log('  5. 📅 Consultar Itinerários de Pelotas');
+  console.log('  0. 🚪 Sair (Logout)');
   printFooter();
 
   const opt = await question('Escolha uma opção: ');
@@ -305,9 +327,12 @@ async function menuLogado() {
       await menuValidador();
       break;
     case '4':
-      await verItinerarios();
+      await menuConexao();
       break;
     case '5':
+      await verItinerarios();
+      break;
+    case '0':
       token = null;
       loggedUser = null;
       currentCards = [];
@@ -472,14 +497,41 @@ async function recarregarCartao() {
       return;
     }
 
-    console.log(`\n${colors.fgYellow}Gerando código Pix Copia e Cola...${colors.reset}`);
+    console.log(`\n${colors.fgYellow}Gerando recarga Pix...${colors.reset}`);
     const resData = await request(`/cartoes/${selecionado.id}/recarregar`, 'POST', { valor });
     
-    console.log(`\n${colors.fgGreen}✅ Pedido de recarga gerado!${colors.reset}`);
-    console.log(`ID da Transação: ${resData.transacao.id}`);
-    console.log(`Status: ${colors.fgYellow}PENDENTE${colors.reset}`);
-    console.log(`\nCódigo Pix Copia e Cola:\n${colors.bright}${colors.fgCyan}${resData.pixCopiaCola}${colors.reset}`);
-    console.log(`\n${colors.fgYellow}Aviso: Para simular o pagamento desse Pix, utilize a opção "Simular Confirmação de Pix via Webhook" no menu principal.${colors.reset}`);
+    console.log(`\n${colors.fgGreen}✅ Pedido de recarga Pix gerado com sucesso!${colors.reset}`);
+    console.log(`Valor: R$ ${valor.toFixed(2)} | Transação ID: ${resData.transacao.id}`);
+    
+    const pagarAgora = await question(`\n${colors.bright}${colors.fgYellow}Simular pagamento imediato desse Pix agora? (S/N): ${colors.reset}`);
+    if (pagarAgora.toUpperCase() === 'S') {
+      const payload = {
+        event: 'payment.approved',
+        transaction_id: resData.transacao.id,
+        cartao_id: selecionado.id,
+        amount: valor
+      };
+
+      const webhookSecret = process.env.WEBHOOK_SECRET || 'webhook_secret_key';
+      const signature = crypto.createHmac('sha256', webhookSecret).update(JSON.stringify(payload)).digest('hex');
+
+      const res = await fetch(`${API_URL}/webhooks/pagamentos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-webhook-signature': signature
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        console.log(`\n${colors.fgGreen}✅ Pix confirmado com sucesso! O valor de R$ ${valor.toFixed(2)} foi atribuído e creditado à sua conta.${colors.reset}`);
+      } else {
+        console.log(`\n${colors.fgRed}❌ Não foi possível confirmar o Pix neste momento.${colors.reset}`);
+      }
+    } else {
+      console.log(`\n${colors.bright}${colors.fgCyan}ℹ️  Pedido mantido como PENDENTE. O valor de R$ ${valor.toFixed(2)} será atribuído à sua conta assim que a confirmação do pagamento for recebida.${colors.reset}`);
+    }
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Falha na recarga: ${err.message}${colors.reset}`);
   }
@@ -641,39 +693,57 @@ function desenharPainelValidador(
   console.log(`${border}└──────────────────────────────────────────────────────────────┘${colors.reset}`);
 }
 
-async function sincronizarOffline() {
-  printHeader('Sincronizar Transações Offline');
-  if (offlineTransactions.length === 0) {
-    console.log('Não existem transações offline pendentes na fila do validador.');
-    console.log('\nPressione Enter para voltar...');
-    await question('');
+async function sincronizarOffline(isAutomatico = false) {
+  if (!isAutomatico) {
+    printHeader('Sincronizar Transações Offline');
+  }
+
+  if (!isValidadorOnline) {
+    console.log(`${colors.fgRed}❌ Operação não permitida no modo OFFLINE!${colors.reset}`);
+    console.log('O validador precisa estar ONLINE para conectar ao servidor e transmitir o lote.');
+    if (!isAutomatico) {
+      console.log('\nPressione Enter para voltar...');
+      await question('');
+    }
     return;
   }
 
-  console.log(`Existem ${offlineTransactions.length} transações na fila do validador ${validadorId}.`);
-  const conf = await question('Deseja transmitir as transações para a nuvem? (S/N): ');
-  if (conf.toUpperCase() !== 'S') return;
+  if (offlineTransactions.length === 0) {
+    if (!isAutomatico) {
+      console.log('Não existem transações offline pendentes na fila do validador.');
+      console.log('\nPressione Enter para voltar...');
+      await question('');
+    }
+    return;
+  }
+
+  if (!isAutomatico) {
+    console.log(`Existem ${offlineTransactions.length} transações no arquivo JSON reserva da catraca ${validadorId}.`);
+    const conf = await question('Deseja transmitir as transações para a nuvem agora? (S/N): ');
+    if (conf.toUpperCase() !== 'S') return;
+  }
 
   try {
-    console.log(`\n${colors.fgYellow}Transmitindo lote de transações para o backend...${colors.reset}`);
+    console.log(`\n${colors.fgYellow}Enviando lote do JSON reserva (${offlineTransactions.length} item/itens) para o banco de dados...${colors.reset}`);
     // Limpa a propriedade extra da CLI antes de enviar
     const dadosEnvio = offlineTransactions.map(({ numeroCartao, ...rest }) => rest);
     
     const resultado = await request('/validador/sincronizar', 'POST', { transacoes: dadosEnvio }, false);
     
-    console.log(`\n${colors.fgGreen}✅ Sincronização concluída com sucesso!${colors.reset}`);
-    console.log(`Processadas: ${resultado.processadas}`);
+    console.log(`\n${colors.fgGreen}✅ Sincronização automática concluída com sucesso!${colors.reset}`);
+    console.log(`Transações gravadas no banco: ${resultado.processadas}`);
     if (resultado.erros.length > 0) {
-      console.log(`${colors.fgRed}Falhas durante a sincronização:${colors.reset}`);
+      console.log(`${colors.fgRed}Falhas durante o envio:${colors.reset}`);
       resultado.erros.forEach((e: string) => console.log(`  - ${e}`));
     }
-    // Esvazia a fila offline e limpa o arquivo físico
+    // Esvazia a fila offline e limpa o arquivo JSON físico reserva
     offlineTransactions = [];
     writeOfflineTransactions([]);
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Erro na sincronização: ${err.message}${colors.reset}`);
   }
-  console.log('\nPressione Enter para voltar...');
+
+  console.log('\nPressione Enter para continuar...');
   await question('');
 }
 
@@ -819,93 +889,7 @@ async function excluirContaLGPD() {
   await question('');
 }
 
-async function simularWebhookPix() {
-  printHeader('Simulador de Webhook Gateway Pix');
-  try {
-    const cartoes = await request('/cartoes', 'GET');
-    if (cartoes.length === 0) {
-      console.log('Você não tem cartões cadastrados.');
-      console.log('\nPressione Enter para voltar...');
-      await question('');
-      return;
-    }
 
-    let pendentes: any[] = [];
-    for (const c of cartoes) {
-      const txs = await request(`/cartoes/${c.id}/transacoes`, 'GET');
-      const cardPendentes = txs.filter((t: any) => t.status === 'pendente' && t.tipo === 'recarga');
-      cardPendentes.forEach((t: any) => {
-        pendentes.push({ ...t, numeroCartao: c.numero });
-      });
-    }
-
-    if (pendentes.length === 0) {
-      console.log('Não existem recargas Pix PENDENTES para os seus cartões.');
-      console.log('\nPressione Enter para voltar...');
-      await question('');
-      return;
-    }
-
-    let txSelecionada = pendentes[0];
-
-    if (pendentes.length > 1) {
-      console.log('Selecione a recarga pendente que deseja aprovar via Webhook:');
-      pendentes.forEach((t, index) => {
-        console.log(`  ${index + 1}. Cartão: ${t.numeroCartao} | Valor: R$ ${Number(t.valor).toFixed(2)} | Transação: ${t.id.substring(0, 8)}...`);
-      });
-
-      const idxStr = await question('\nEscolha: ');
-      const idx = parseInt(idxStr) - 1;
-
-      if (isNaN(idx) || idx < 0 || idx >= pendentes.length) {
-        console.log(`${colors.fgRed}Opção inválida!${colors.reset}`);
-        await new Promise(r => setTimeout(r, 1000));
-        return;
-      }
-      txSelecionada = pendentes[idx];
-    } else {
-      console.log(`\nProcessando automaticamente a única recarga pendente de R$ ${Number(txSelecionada.valor).toFixed(2)} para o cartão ${txSelecionada.numeroCartao}...`);
-    }
-
-    const payload = {
-      event: 'payment.approved',
-      data: {
-        transaction_id: txSelecionada.id,
-        cartao_id: txSelecionada.cartao_id,
-        amount: Number(txSelecionada.valor)
-      }
-    };
-
-    const webhookSecret = process.env.WEBHOOK_SECRET || 'webhook_secret_key';
-    const signature = crypto.createHmac('sha256', webhookSecret).update(JSON.stringify(payload)).digest('hex');
-
-    console.log(`\n${colors.fgYellow}Disparando webhook de confirmação de pagamento...${colors.reset}`);
-    console.log(`Assinatura SHA-256 gerada localmente: ${signature}`);
-
-    const res = await fetch(`${API_URL}/webhooks/pagamentos`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-webhook-signature': signature
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const responseData: any = await res.json();
-    if (!res.ok) {
-      throw new Error(responseData.error || 'Erro ao simular webhook.');
-    }
-
-    console.log(`\n${colors.fgGreen}✅ Webhook aceito e processado pelo backend!${colors.reset}`);
-    console.log(`Mensagem: ${responseData.message}`);
-    console.log(`Status do pagamento consolidado: ${responseData.data.status.toUpperCase()}`);
-    console.log(`\nO saldo correspondente foi creditado no cartão ${txSelecionada.numeroCartao}.`);
-  } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro na simulação do webhook: ${err.message}${colors.reset}`);
-  }
-  console.log('\nPressione Enter para continuar...');
-  await question('');
-}
 
 // Loop principal do CLI
 async function main() {
