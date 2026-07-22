@@ -180,7 +180,8 @@ async function menuPerfil() {
   while (true) {
     printHeader('Meu Perfil');
     console.log('  1. 👤 Visualizar Perfil');
-    console.log('  2. ⚠️  Excluir Conta');
+    console.log('  2. ✏️  Editar Perfil');
+    console.log('  3. ⚠️  Excluir Conta');
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
@@ -190,6 +191,9 @@ async function menuPerfil() {
         await verPerfil();
         break;
       case '2':
+        await editarPerfil();
+        break;
+      case '3':
         await excluirContaLGPD();
         if (!loggedUser) return; // Se a conta foi excluída (deslogado), retorna
         break;
@@ -370,16 +374,52 @@ async function loginPassageiro() {
 }
 
 async function verPerfil() {
-  printHeader('Meu Perfil');
+  printHeader('Visualizar Perfil');
   try {
     const user = await request('/profile', 'GET');
-    console.log(` Nome:   ${user.nome}`);
-    console.log(` CPF:    ${user.cpf}`);
-    console.log(` E-mail: ${user.email}`);
-    console.log(` Status: ${user.status === 'ativo' ? colors.fgGreen + 'Ativo' : colors.fgRed + user.status}${colors.reset}`);
+    console.log(` Nome:     ${user.nome}`);
+    console.log(` CPF:      ${user.cpf}`);
+    console.log(` E-mail:   ${user.email}`);
+    console.log(` Status:   ${user.status === 'ativo' ? colors.fgGreen + 'Ativo' : colors.fgRed + user.status}${colors.reset}`);
     console.log(` Cadastro: ${new Date(user.created_at).toLocaleString()}`);
   } catch (err: any) {
     console.log(`${colors.fgRed}Erro ao carregar perfil: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function editarPerfil() {
+  printHeader('Editar Perfil');
+  try {
+    const user = await request('/profile', 'GET');
+
+    console.log(`${colors.fgCyan}Dados atuais:${colors.reset}`);
+    console.log(` Nome:   ${user.nome}`);
+    console.log(` E-mail: ${user.email}`);
+    console.log(`\n${colors.dim}Deixe o campo em branco para manter o valor atual.${colors.reset}\n`);
+
+    const novoNome  = await question(`Novo nome   [${user.nome}]: `);
+    const novoEmail = await question(`Novo e-mail [${user.email}]: `);
+
+    const payload: any = {};
+    if (novoNome.trim())  payload.nome  = novoNome.trim();
+    if (novoEmail.trim()) payload.email = novoEmail.trim();
+
+    if (Object.keys(payload).length === 0) {
+      console.log(`\n${colors.fgYellow}Nenhuma alteração informada.${colors.reset}`);
+      console.log('\nPressione Enter para voltar...');
+      await question('');
+      return;
+    }
+
+    const atualizado = await request('/profile', 'PUT', payload);
+    loggedUser = atualizado;
+    console.log(`\n${colors.fgGreen}✅ Perfil atualizado com sucesso!${colors.reset}`);
+    console.log(` Nome:   ${atualizado.nome}`);
+    console.log(` E-mail: ${atualizado.email}`);
+  } catch (err: any) {
+    console.log(`\n${colors.fgRed}❌ Erro ao atualizar perfil: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
