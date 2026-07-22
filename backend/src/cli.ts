@@ -266,38 +266,23 @@ async function menuValidador() {
   }
 }
 
-async function menuConexao() {
-  while (true) {
-    printHeader('Conexão e Rede');
-    console.log('  1. 🔌 Alternar Conexão (Online / Offline)');
-    console.log('  2. 🔄 Sincronizar Transações Pendentes');
-    console.log('  0. ⬅️  Voltar ao Menu Principal');
-    printFooter();
+async function alternarConexao() {
+  isValidadorOnline = !isValidadorOnline;
+  printHeader('Conexão e Rede');
+  console.log(`${colors.fgYellow}Status da conexão alterado para: ${isValidadorOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴'}${colors.reset}\n`);
 
-    const opt = await question('Escolha uma opção: ');
-    switch (opt.trim()) {
-      case '1':
-        isValidadorOnline = !isValidadorOnline;
-        console.log(`\n${colors.fgYellow}Status da conexão alterado para: ${isValidadorOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴'}${colors.reset}`);
-        
-        // Se voltou para ONLINE e há mensagens pendentes no JSON reserva, sincroniza automaticamente
-        if (isValidadorOnline && offlineTransactions.length > 0) {
-          console.log(`\n${colors.bright}${colors.fgCyan}📡 Sinal de rede restabelecido! Sincronizando automaticamente ${offlineTransactions.length} transação(ões) salva(s) no JSON reserva...${colors.reset}`);
-          await new Promise(r => setTimeout(r, 1000));
-          await sincronizarOffline(true);
-        } else {
-          await new Promise(r => setTimeout(r, 1200));
-        }
-        break;
-      case '2':
-        await sincronizarOffline();
-        break;
-      case '0':
-        return;
-      default:
-        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
-        await question('');
-    }
+  if (isValidadorOnline && offlineTransactions.length > 0) {
+    console.log(`${colors.bright}${colors.fgCyan}📡 Sinal de rede restabelecido! Sincronizando automaticamente ${offlineTransactions.length} transação(ões) salva(s) no JSON reserva...${colors.reset}`);
+    await new Promise(r => setTimeout(r, 1000));
+    await sincronizarOffline(true);
+  } else if (isValidadorOnline) {
+    console.log(`${colors.fgGreen}Dispositivo conectado e sincronizado com o servidor central.${colors.reset}`);
+    console.log('\nPressione Enter para continuar...');
+    await question('');
+  } else {
+    console.log(`${colors.fgRed}Modo contingência ativado. As passagens registradas na catraca serão gravadas localmente.${colors.reset}`);
+    console.log('\nPressione Enter para continuar...');
+    await question('');
   }
 }
 
@@ -310,9 +295,9 @@ async function menuLogado() {
   console.log('  1. 👤 Meu Perfil');
   console.log('  2. 💳 Gerenciar Cartões');
   console.log('  3. 🚌 Validador');
-  console.log('  4. 🌐 Conexão e Rede');
+  console.log('  4. 🌐 Alternar Conexão');
   console.log('  5. 📅 Consultar Itinerários de Pelotas');
-  console.log('  0. 🚪 Sair (Logout)');
+  console.log('  0. 🚪 Sair');
   printFooter();
 
   const opt = await question('Escolha uma opção: ');
@@ -327,7 +312,7 @@ async function menuLogado() {
       await menuValidador();
       break;
     case '4':
-      await menuConexao();
+      await alternarConexao();
       break;
     case '5':
       await verItinerarios();
@@ -477,7 +462,7 @@ async function solicitarCartao() {
 }
 
 async function recarregarCartao() {
-  printHeader('Recarregar Cartão (Pix)');
+  printHeader('Recarregar Cartão');
   try {
     const cartoes = await request('/cartoes', 'GET');
     const selecionado = cartoes.find((c: any) => c.status === 'ativo');
@@ -488,7 +473,7 @@ async function recarregarCartao() {
       return;
     }
 
-    const valorStr = await question('Valor da recarga (ex: 20.00): ');
+    const valorStr = await question('Valor da recarga: ');
     const valor = parseFloat(valorStr);
 
     if (isNaN(valor) || valor <= 0) {
