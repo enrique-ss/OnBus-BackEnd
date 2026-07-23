@@ -23,8 +23,7 @@ export interface Cartao {
   tipo: 'comum' | 'estudante' | 'idoso';
   saldo: number;
   status: 'ativo' | 'bloqueado' | 'cancelado';
-  layout_base_id: string;
-  custom_theme_url: string;
+  theme_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +41,6 @@ export interface Transacao {
 export interface Validador {
   id: string;
   status: string;
-  ultima_sincronizacao: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

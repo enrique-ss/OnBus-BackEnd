@@ -383,7 +383,7 @@ async function listarCartoes() {
       console.log(`  Número: ${selecionado.numero}`);
       console.log(`  Saldo:  ${colors.bright}R$ ${Number(selecionado.saldo).toFixed(2)}${colors.reset}`);
       console.log(`  Status: ${statusStr}${colors.reset}`);
-      console.log(`  Layout: ${selecionado.layout_base_id} ${selecionado.custom_theme_url ? '| URL Tema: ' + selecionado.custom_theme_url : ''}`);
+      console.log(`  Tema: ${selecionado.theme_url || 'Padrão do tipo ' + selecionado.tipo}`);
     }
   } catch (err: any) {
     console.log(`${colors.fgRed}Erro ao carregar dados do cartão: ${err.message}${colors.reset}`);
@@ -425,13 +425,13 @@ async function solicitarCartao() {
   else if (opt === '3') tipo = 'idoso';
   else return;
 
-  const customThemeUrl = await question('Personalizar cor/imagem (URL opcional): ');
+  const themeUrl = await question('Personalizar cor/imagem (URL opcional): ');
 
   try {
-    const cartao = await request('/cartoes', 'POST', { tipo, customThemeUrl });
+    const cartao = await request('/cartoes', 'POST', { tipo, themeUrl });
     console.log(`\n${colors.fgGreen}✅ Cartão emitido com sucesso!${colors.reset}`);
     console.log(`Número do Cartão: ${cartao.numero}`);
-    console.log(`Tema Aplicado: ${cartao.layout_base_id}`);
+    console.log(`Tema: ${cartao.theme_url || 'Padrão do tipo ' + tipo}`);
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Erro na emissão: ${err.message}${colors.reset}`);
   }

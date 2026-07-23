@@ -14,7 +14,7 @@ export class ValidadorService {
     }
   }
 
-  static async obterValidador(validadorId: string): Promise<{ id: string; status: string; ultima_sincronizacao: string }> {
+  static async obterValidador(validadorId: string): Promise<{ id: string; status: string }> {
     const validador = await db.validadores.findOne({ id: validadorId });
     if (!validador) {
       throw new Error(`Validador '${validadorId}' não encontrado.`);
@@ -185,17 +185,6 @@ export class ValidadorService {
       }
     }
 
-    // Atualiza o registro do validador (se ele estiver registrado)
-    if (transacoesOffline.length > 0) {
-      const validadorId = transacoesOffline[0].local_validador_id;
-      const existValidador = await db.validadores.findOne({ id: validadorId });
-      if (existValidador) {
-        await db.validadores.update(
-          { id: validadorId },
-          { ultima_sincronizacao: new Date().toISOString() }
-        );
-      }
-    }
 
     console.log(`Sincronização concluída. ${processadas} processadas com sucesso. ${erros.length} falhas.`);
     return { processadas, erros };

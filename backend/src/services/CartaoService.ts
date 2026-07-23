@@ -13,7 +13,7 @@ export class CartaoService {
     return `${prefixo}.${codTipo}.${digitos}`;
   }
 
-  static async emitir(usuarioId: string, tipo: 'comum' | 'estudante' | 'idoso', customThemeUrl?: string): Promise<Cartao> {
+  static async emitir(usuarioId: string, tipo: 'comum' | 'estudante' | 'idoso', themeUrl?: string): Promise<Cartao> {
     const user = await db.usuarios.findOne({ id: usuarioId });
     if (!user) throw new Error('Usuário não encontrado.');
 
@@ -23,7 +23,6 @@ export class CartaoService {
       throw new Error('Você já possui um cartão ativo. Para solicitar um novo, é necessário bloquear o cartão atual.');
     }
 
-    const layoutBaseId = `tema-${tipo}`;
     const numero = this.gerarNumeroCartao(tipo);
     const cartaoId = randomUUID();
 
@@ -34,8 +33,7 @@ export class CartaoService {
       tipo,
       saldo: 0.00,
       status: 'ativo',
-      layout_base_id: layoutBaseId,
-      custom_theme_url: customThemeUrl || '',
+      theme_url: themeUrl || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -79,7 +77,7 @@ export class CartaoService {
     await db.cartoes.update({ id: cartaoId }, { status: 'cancelado', saldo: 0, updated_at: new Date().toISOString() });
 
     // Gerar novo cartão
-    const novoCartao = await this.emitir(usuarioId, cartaoAntigo.tipo, cartaoAntigo.custom_theme_url);
+    const novoCartao = await this.emitir(usuarioId, cartaoAntigo.tipo, cartaoAntigo.theme_url || undefined);
     
     // Creditar o saldo no novo cartão
     const novoSaldo = novoCartao.saldo + saldoTransferido;
