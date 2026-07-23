@@ -31,8 +31,8 @@ async function setup() {
     await kInstance.seed.run();
 
     console.log('\n✅ Banco de dados configurado com sucesso!');
-    console.log('   Tabelas: usuarios, cartoes, transacoes, validadores');
-    console.log('   Seeds: validadores 1203 e 4401 inseridos\n');
+    console.log('   Tabelas: usuarios, cartoes, transacoes, catracas');
+    console.log('   Seeds: catracas 1203 e 4401 inseridos\n');
   } catch (err: any) {
     console.error('\n❌ Erro durante o setup:', err.message);
     process.exit(1);

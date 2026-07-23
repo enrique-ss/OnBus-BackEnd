@@ -40,11 +40,10 @@ function question(query: string): Promise<string> {
   return new Promise((resolve) => rl.question(query, resolve));
 }
 
-// Estado local da CLI (simulando a aplicação no celular/validador)
+// Estado local da CLI (simulando a aplicação no celular/catraca)
 let token: string | null = null;
 let loggedUser: any = null;
 let currentCards: any[] = [];
-let validadorId = process.env.VALIDADOR_ID || '1203'; // ID do validador configurável via .env
 
 // Helper para requisições HTTP seguras
 async function request(endpoint: string, method = 'GET', body: any = null, requiresAuth = true): Promise<any> {
@@ -211,17 +210,21 @@ async function menuCartoes() {
   }
 }
 
-async function menuValidador() {
+async function menuCatraca() {
   while (true) {
-    printHeader('Validador');
+    printHeader('Catraca');
     console.log('  1. 🚌 Simular Embarque');
+    console.log('  2. 📋 Ver Histórico da Catraca');
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
     switch (opt.trim()) {
       case '1':
-        await simularValidador();
+        await simularCatraca();
+        break;
+      case '2':
+        await verHistoricoCatraca();
         break;
       case '0':
         return;
@@ -240,7 +243,7 @@ async function menuLogado() {
   printHeader('Home');
   console.log('  1. 👤 Meu Perfil');
   console.log('  2. 💳 Gerenciar Cartões');
-  console.log('  3. 🚌 Validador');
+  console.log('  3. 🚌 Catraca');
   console.log('  4. 📅 Consultar Itinerários de Pelotas');
   console.log('  0. 🚪 Sair');
   printFooter();
@@ -254,7 +257,7 @@ async function menuLogado() {
       await menuCartoes();
       break;
     case '3':
-      await menuValidador();
+      await menuCatraca();
       break;
     case '4':
       await verItinerarios();
@@ -282,11 +285,18 @@ async function registrarPassageiro() {
   const cpf = await question('CPF (11 dígitos): ');
   const email = await question('E-mail: ');
   const senha = await question('Senha: ');
+  
+  console.log('\nTipo de conta:');
+  console.log('  1. Passageiro (comum)');
+  console.log('  2. Administrador');
+  const tipoOpt = await question('Escolha o tipo: ');
+  const tipo = tipoOpt.trim() === '2' ? 'admin' : 'comum';
 
   try {
-    const user = await request('/auth/register', 'POST', { nome, cpf, email, senha }, false);
+    const user = await request('/auth/register', 'POST', { nome, cpf, email, senha, tipo }, false);
     console.log(`\n${colors.fgGreen}✅ Passageiro registrado com sucesso!${colors.reset}`);
     console.log(`ID: ${user.id}`);
+    console.log(`Tipo: ${user.tipo}`);
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Erro no cadastro: ${err.message}${colors.reset}`);
   }
@@ -590,8 +600,8 @@ async function solicitarSegundaVia() {
   await question('');
 }
 
-async function simularValidador() {
-  printHeader('Simular Validador / Catraca');
+async function simularCatraca() {
+  printHeader('Simular Catraca');
   try {
     const cartoes = await request('/cartoes', 'GET');
     const selecionado = cartoes.find((c: any) => c.status === 'ativo');
@@ -602,18 +612,105 @@ async function simularValidador() {
       return;
     }
 
-    // Sempre usa a API do backend para processar embarque (regras de negócio no backend)
-    console.log(`\n${colors.fgYellow}Aproximando cartão no validador...${colors.reset}`);
-    const resultado = await request('/validador/embarque', 'POST', {
+    // Selecionar destino (catraca)
+    const catracas = await request('/catracas', 'GET');
+    if (catracas.length === 0) {
+      console.log(`${colors.fgRed}❌ Erro: Nenhuma catraca disponível.${colors.reset}`);
+      console.log('\nPressione Enter para continuar...');
+      await question('');
+      return;
+    }
+
+    console.log('\nSelecione seu destino:\n');
+    catracas.forEach((c: any, index: number) => {
+      console.log(`  ${index + 1}. ${c.nome}`);
+    });
+
+    const opt = await question('\nDigite o número do destino: ');
+    const index = parseInt(opt.trim()) - 1;
+    
+    if (index < 0 || index >= catracas.length) {
+      console.log(`${colors.fgRed}❌ Opção inválida.${colors.reset}`);
+      console.log('\nPressione Enter para voltar...');
+      await question('');
+      return;
+    }
+
+    const catracaSelecionada = catracas[index];
+    console.log(`\n${colors.fgYellow}Aproximando cartão na catraca...${colors.reset}`);
+    console.log(`${colors.fgCyan}Destino: ${catracaSelecionada.nome}${colors.reset}`);
+    
+    const resultado = await request('/catraca/embarque', 'POST', {
       cartaoId: selecionado.id,
-      validadorId
+      catracaId: catracaSelecionada.id
     }, false);
 
-    desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero);
+    desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero, catracaSelecionada.nome);
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Erro de validação: ${err.message}${colors.reset}`);
   }
 
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function verHistoricoCatraca() {
+  printHeader('Ver Histórico da Catraca');
+  try {
+    const catracas = await request('/catracas', 'GET');
+    if (catracas.length === 0) {
+      console.log('Nenhuma catraca disponível.');
+      console.log('\nPressione Enter para voltar...');
+      await question('');
+      return;
+    }
+
+    console.log('\nSelecione a catraca para ver o histórico:\n');
+    catracas.forEach((c: any, index: number) => {
+      console.log(`  ${index + 1}. ${c.nome} (ID: ${c.id})`);
+    });
+
+    const opt = await question('\nDigite o número da catraca: ');
+    const index = parseInt(opt.trim()) - 1;
+    
+    if (index < 0 || index >= catracas.length) {
+      console.log(`${colors.fgRed}Opção inválida.${colors.reset}`);
+      console.log('\nPressione Enter para voltar...');
+      await question('');
+      return;
+    }
+
+    const catracaSelecionada = catracas[index];
+    
+    // Buscar validações desta catraca (requer auth e admin)
+    const validacoes = await request(`/catracas/${catracaSelecionada.id}/validacoes`, 'GET', null, true);
+    
+    printHeader(`Histórico - ${catracaSelecionada.nome}`);
+    
+    if (validacoes.length === 0) {
+      console.log('Nenhum cartão foi validado nesta catraca ainda.');
+    } else {
+      console.log(`\nTotal de validações: ${validacoes.length}\n`);
+      validacoes.forEach((v: any) => {
+        const dataStr = new Date(v.created_at).toLocaleString();
+        const statusStr = v.autorizado === 'sim' 
+          ? `${colors.fgGreen}AUTORIZADO` 
+          : `${colors.fgRed}NEGADO`;
+        console.log(`  [${dataStr}] ${statusStr} Cartão: ${v.cartao_numero} Tarifa: R$ ${Number(v.tarifa).toFixed(2)}${colors.reset}`);
+        if (v.linha) {
+          console.log(`         Linha: ${v.linha}`);
+        }
+        if (v.dia && v.horario) {
+          console.log(`         Dia: ${v.dia} Horário: ${v.horario}`);
+        }
+        if (v.mensagem) {
+          console.log(`         ${v.mensagem}`);
+        }
+      });
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao buscar histórico da catraca: ${err.message}${colors.reset}`);
+  }
   console.log('\nPressione Enter para voltar...');
   await question('');
 }
@@ -623,7 +720,8 @@ function desenharPainelValidador(
   tarifa: number,
   saldo: number,
   mensagem: string,
-  numeroCartao: string
+  numeroCartao: string,
+  nomeCatraca: string
 ) {
   const border = autorizado ? colors.fgGreen : colors.fgRed;
   const msgStyle = autorizado 
@@ -631,9 +729,9 @@ function desenharPainelValidador(
     : `${colors.bright}${colors.fgRed}>>> ${mensagem} <<<${colors.reset}`;
 
   console.log(`\n${border}┌──────────────────────────────────────────────────────────────┐${colors.reset}`);
-  console.log(`${border}│                     VALIDADOR ONBUS                          │${colors.reset}`);
+  console.log(`${border}│                     CATRACA ONBUS                          │${colors.reset}`);
   console.log(`${border}├──────────────────────────────────────────────────────────────┤${colors.reset}`);
-  console.log(`${border}│ Validador ID: ${validadorId.padEnd(46)} │`);
+  console.log(`${border}│ Linha: ${nomeCatraca.padEnd(51)} │`);
   console.log(`${border}│ Cartão: ${numeroCartao.padEnd(52)} │`);
   console.log(`${border}├──────────────────────────────────────────────────────────────┤${colors.reset}`);
   console.log(`${border}│                                                              │${colors.reset}`);
@@ -646,7 +744,7 @@ function desenharPainelValidador(
 }
 
 async function verHistorico() {
-  printHeader('Histórico de Transações');
+  printHeader('Histórico do Cartão');
   try {
     const cartoes = await request('/cartoes', 'GET');
     if (cartoes.length === 0) {
@@ -659,20 +757,28 @@ async function verHistorico() {
     const ativo = cartoes.find((c: any) => c.status === 'ativo');
     const selecionado = ativo || cartoes[cartoes.length - 1];
 
-    const transacoes = await request(`/cartoes/${selecionado.id}/transacoes`, 'GET');
-    printHeader(`Extrato do Cartão ${selecionado.numero}`);
+    const historico = await request(`/cartoes/${selecionado.id}/historico`, 'GET');
+    printHeader(`Histórico de Validações - Cartão ${selecionado.numero}`);
     
-    if (transacoes.length === 0) {
-      console.log('Não há transações registradas para este cartão.');
+    if (historico.length === 0) {
+      console.log('Este cartão ainda não passou em nenhuma catraca.');
     } else {
-      transacoes.forEach((t: any) => {
-        const dataStr = new Date(t.created_at).toLocaleString();
-        const tipoStr = t.tipo === 'recarga' 
-          ? `${colors.fgGreen}RECARGA (+)` 
-          : `${colors.fgRed}DÉBITO  (-)`;
-        const validadorStr = t.local_validador_id ? ` [Validador: ${t.local_validador_id}]` : '';
-        
-        console.log(`  [${dataStr}] ${tipoStr} R$ ${Number(t.valor).toFixed(2)}${colors.reset}${validadorStr} - Status: ${t.status.toUpperCase()}`);
+      console.log(`\nTotal de validações: ${historico.length}\n`);
+      historico.forEach((v: any) => {
+        const dataStr = new Date(v.created_at).toLocaleString();
+        const statusStr = v.autorizado === 'sim' 
+          ? `${colors.fgGreen}AUTORIZADO` 
+          : `${colors.fgRed}NEGADO`;
+        console.log(`  [${dataStr}] ${statusStr} Tarifa: R$ ${Number(v.tarifa).toFixed(2)}${colors.reset}`);
+        if (v.catraca_nome) {
+          console.log(`         Linha: ${v.catraca_nome}`);
+        }
+        if (v.dia && v.horario) {
+          console.log(`         Dia: ${v.dia} Horário: ${v.horario}`);
+        }
+        if (v.mensagem) {
+          console.log(`         ${v.mensagem}`);
+        }
       });
     }
   } catch (err: any) {

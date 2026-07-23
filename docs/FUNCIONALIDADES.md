@@ -698,6 +698,7 @@ VALIDADOR_ID=1203
 - cpf (VARCHAR 11, UNIQUE)
 - email (VARCHAR 100, UNIQUE)
 - senha (VARCHAR 255)
+- tipo (VARCHAR 20) - comum/admin
 - status (VARCHAR 20)
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
@@ -710,21 +711,23 @@ VALIDADOR_ID=1203
 - saldo (DECIMAL 8,2)
 - status (VARCHAR 20)
 - theme_url (VARCHAR 255, NULLABLE)
+- historico (TEXT, NULLABLE) - JSON com histórico de validações (catracas que passou)
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
 
 **transacoes:**
 - id (VARCHAR 36)
 - cartao_id (VARCHAR 36, FK)
-- tipo (VARCHAR 20)
+- tipo (VARCHAR 20) - apenas 'recarga'
 - valor (DECIMAL 8,2)
 - status (VARCHAR 20)
-- local_validador_id (VARCHAR 50, NULLABLE)
 - created_at (TIMESTAMP)
 
-**validadores:**
-- id (VARCHAR 50)
+**catracas:**
+- id (VARCHAR 50) - ID da linha (ex: COHAB, FRAGATA, LARANJAL, AEROPORTO)
+- nome (VARCHAR 100) - Nome da linha (ex: "Cohab / Tablada (Laranjal)")
 - status (VARCHAR 20)
+- historico (TEXT) - JSON com histórico de validações (cartões que tocou)
 
 ### Relacionamentos
 
@@ -749,17 +752,20 @@ VALIDADOR_ID=1203
 - `POST /cartoes/bloquear` - Bloquear cartão (auth)
 - `POST /cartoes/segunda-via` - Solicitar segunda via (auth)
 - `POST /cartoes/recarregar` - Recarregar via Pix (auth)
+- `GET /cartoes/:id/transacoes` - Listar recargas do cartão (auth)
+- `GET /cartoes/:id/historico` - Listar histórico de validações do cartão (auth)
 
 ### Transações
-- `GET /transacoes` - Listar transações (auth)
 - `GET /transacoes/pendentes` - Listar recargas pendentes (auth)
 - `POST /transacoes/:id/pagar` - Pagar recarga pendente (auth)
 
-### Validadores
-- `GET /api/validadores/:id` - Obter validador
-- `GET /api/validadores/tarifas` - Obter tarifas
-- `POST /validador/embarque` - Processar embarque
-- `POST /api/validador/sincronizar` - Sincronizar offline
+### Catracas
+- `GET /api/catracas` - Listar todas as catracas (linhas)
+- `GET /api/catracas/:id` - Obter catraca específica
+- `GET /api/catracas/:id/validacoes` - Listar histórico de validações da catraca (apenas admin)
+- `GET /api/catracas/tarifas` - Obter tarifas
+- `POST /api/catraca/embarque` - Processar embarque
+- `POST /api/catraca/sincronizar` - Sincronizar offline
 
 ### Itinerários
 - `GET /itinerarios` - Consultar itinerários

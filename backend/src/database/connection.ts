@@ -11,6 +11,7 @@ export interface Usuario {
   cpf: string;
   email: string;
   senha: string;
+  tipo: 'comum' | 'admin';
   status: string;
   created_at: string;
   updated_at: string;
@@ -24,6 +25,7 @@ export interface Cartao {
   saldo: number;
   status: 'ativo' | 'bloqueado' | 'cancelado';
   theme_url: string | null;
+  historico: string | null; // JSON com histórico de validações (catracas que passou)
   created_at: string;
   updated_at: string;
 }
@@ -31,16 +33,17 @@ export interface Cartao {
 export interface Transacao {
   id: string;
   cartao_id: string;
-  tipo: 'recarga' | 'debito';
+  tipo: 'recarga';
   valor: number;
   status: 'pendente' | 'confirmado' | 'falho';
-  local_validador_id: string | null;
   created_at: string;
 }
 
-export interface Validador {
+export interface Catraca {
   id: string;
+  nome: string;
   status: string;
+  historico: string | null; // JSON com histórico de validações
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,5 +110,5 @@ export const db = {
   usuarios: new KnexTableWrapper<Usuario>(knexInstance, 'usuarios'),
   cartoes: new KnexTableWrapper<Cartao>(knexInstance, 'cartoes'),
   transacoes: new KnexTableWrapper<Transacao>(knexInstance, 'transacoes'),
-  validadores: new KnexTableWrapper<Validador>(knexInstance, 'validadores'),
+  catracas: new KnexTableWrapper<Catraca>(knexInstance, 'catracas'),
 };

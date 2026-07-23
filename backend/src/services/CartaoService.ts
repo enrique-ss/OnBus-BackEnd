@@ -34,6 +34,7 @@ export class CartaoService {
       saldo: 0.00,
       status: 'ativo',
       theme_url: themeUrl || null,
+      historico: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -92,7 +93,6 @@ export class CartaoService {
         tipo: 'recarga',
         valor: saldoTransferido,
         status: 'confirmado',
-        local_validador_id: 'TRANSFERENCIA',
         created_at: new Date().toISOString()
       };
       await db.transacoes.insert(novaTransacao);
@@ -121,7 +121,6 @@ export class CartaoService {
       tipo: 'recarga',
       valor,
       status: 'pendente', // Mantém pendente
-      local_validador_id: 'WEB_PIX',
       created_at: new Date().toISOString()
     };
 

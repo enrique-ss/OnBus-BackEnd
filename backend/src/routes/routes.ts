@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { adminMiddleware } from '../middleware/adminMiddleware';
 import { AuthController } from '../controllers/AuthController';
 import { ProfileController } from '../controllers/ProfileController';
 import { CartaoController } from '../controllers/CartaoController';
 import { WebhookController } from '../controllers/WebhookController';
-import { ValidadorController } from '../controllers/ValidadorController';
+import { CatracaController } from '../controllers/CatracaController';
 import { ItinerarioController } from '../controllers/ItinerarioController';
 
 const router = Router();
@@ -34,6 +35,7 @@ router.post('/api/cartoes/:id/bloquear', authMiddleware, CartaoController.bloque
 router.post('/api/cartoes/:id/segunda-via', authMiddleware, CartaoController.solicitarSegundaVia);
 router.post('/api/cartoes/:id/recarregar', authMiddleware, CartaoController.recarregar);
 router.get('/api/cartoes/:id/transacoes', authMiddleware, CartaoController.listarTransacoes);
+router.get('/api/cartoes/:id/historico', authMiddleware, CartaoController.listarHistorico);
 router.get('/api/transacoes/pendentes', authMiddleware, CartaoController.listarPendentes);
 router.post('/api/transacoes/:id/pagar', authMiddleware, CartaoController.pagarPendente);
 
@@ -44,10 +46,12 @@ router.post('/api/webhooks/pagamentos', WebhookController.pagamentos);
 // ROTAS DE VALIDAÇÃO DE EMBARQUE & SINCRONIZAÇÃO
 // ----------------------------------------------------
 
-router.post('/api/validador/embarque', ValidadorController.processarEmbarqueOnline);
-router.post('/api/validador/sincronizar', ValidadorController.sincronizarTransacoesOffline);
-router.get('/api/validadores/:id', ValidadorController.obterValidador);
-router.get('/api/validadores/tarifas', ValidadorController.obterTarifas);
+router.post('/api/catraca/embarque', CatracaController.processarEmbarqueOnline);
+router.post('/api/catraca/sincronizar', CatracaController.sincronizarTransacoesOffline);
+router.get('/api/catracas', CatracaController.listar);
+router.get('/api/catracas/:id', CatracaController.obterCatraca);
+router.get('/api/catracas/:id/validacoes', authMiddleware, adminMiddleware, CatracaController.listarValidacoes);
+router.get('/api/catracas/tarifas', CatracaController.obterTarifas);
 
 // ----------------------------------------------------
 // ROTAS DE ITINERÁRIOS

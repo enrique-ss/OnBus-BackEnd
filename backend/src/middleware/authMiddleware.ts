@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
     id: string;
     cpf: string;
     email: string;
+    tipo: 'comum' | 'admin';
   };
 }
 
@@ -25,7 +26,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   const token = parts[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; cpf: string; email: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; cpf: string; email: string; tipo: 'comum' | 'admin' };
     req.user = decoded;
     next();
   } catch (err) {

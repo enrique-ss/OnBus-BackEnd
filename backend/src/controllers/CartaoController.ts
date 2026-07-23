@@ -65,6 +65,18 @@ export class CartaoController {
     }
   }
 
+  static async listarHistorico(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const cartao = await db.cartoes.findOne({ id: req.params.id as string, usuario_id: req.user!.id });
+      if (!cartao) return res.status(404).json({ error: 'Cartão não encontrado.' });
+
+      const historico = cartao.historico ? JSON.parse(cartao.historico) : [];
+      return res.status(200).json(historico);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
   static async listarPendentes(req: AuthRequest, res: Response): Promise<any> {
     try {
       const pendentes = await CartaoService.listarPendentes(req.user!.id);

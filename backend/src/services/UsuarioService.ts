@@ -40,7 +40,7 @@ function validarEmail(email: string): boolean {
 
 export class UsuarioService {
   static async register(data: any): Promise<Omit<Usuario, 'senha'>> {
-    const { nome, cpf, email, senha } = data;
+    const { nome, cpf, email, senha, tipo } = data;
 
     if (!nome || !cpf || !email || !senha) {
       throw new Error('Preencha todos os campos obrigatórios (nome, cpf, email, senha).');
@@ -72,6 +72,7 @@ export class UsuarioService {
       cpf: cleanCpf,
       email: cleanEmail,
       senha: hashedPassword,
+      tipo: tipo || 'comum',
       status: 'ativo',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -104,7 +105,7 @@ export class UsuarioService {
       throw new Error('E-mail ou senha incorretos.');
     }
 
-    const token = jwt.sign({ id: user.id, cpf: user.cpf, email: user.email }, JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, cpf: user.cpf, email: user.email, tipo: user.tipo }, JWT_SECRET, {
       expiresIn: '24h',
     });
 
