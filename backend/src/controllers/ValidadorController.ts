@@ -27,4 +27,26 @@ export class ValidadorController {
       return res.status(400).json({ error: err.message });
     }
   }
+
+  static async obterValidador(req: any, res: Response): Promise<any> {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'O parâmetro id é obrigatório.' });
+      }
+      const validador = await ValidadorService.obterValidador(id);
+      return res.status(200).json(validador);
+    } catch (err: any) {
+      return res.status(404).json({ error: err.message });
+    }
+  }
+
+  static async obterTarifas(req: any, res: Response): Promise<any> {
+    try {
+      const tarifas = ValidadorService.obterTarifas();
+      return res.status(200).json(tarifas);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
 }

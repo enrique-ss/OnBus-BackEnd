@@ -44,6 +44,8 @@ router.post('/api/webhooks/pagamentos', WebhookController.pagamentos);
 
 router.post('/api/validador/embarque', ValidadorController.processarEmbarqueOnline);
 router.post('/api/validador/sincronizar', ValidadorController.sincronizarTransacoesOffline);
+router.get('/api/validadores/:id', ValidadorController.obterValidador);
+router.get('/api/validadores/tarifas', ValidadorController.obterTarifas);
 
 // ----------------------------------------------------
 // ROTAS DE ITINERÁRIOS

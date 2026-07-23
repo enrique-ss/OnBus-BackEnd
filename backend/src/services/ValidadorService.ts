@@ -14,6 +14,22 @@ export class ValidadorService {
     }
   }
 
+  static async obterValidador(validadorId: string): Promise<{ id: string; status: string; ultima_sincronizacao: string }> {
+    const validador = await db.validadores.findOne({ id: validadorId });
+    if (!validador) {
+      throw new Error(`Validador '${validadorId}' não encontrado.`);
+    }
+    return validador;
+  }
+
+  static obterTarifas(): Record<string, number> {
+    return {
+      comum: 5.00,
+      estudante: 2.50,
+      idoso: 0.00
+    };
+  }
+
   static async processarEmbarqueOnline(
     cartaoId: string,
     validadorId: string

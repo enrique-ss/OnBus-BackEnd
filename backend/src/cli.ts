@@ -44,41 +44,7 @@ function question(query: string): Promise<string> {
 let token: string | null = null;
 let loggedUser: any = null;
 let currentCards: any[] = [];
-let validadorId = '1203';
-let isValidadorOnline = true;
-
-// Fila de transações offline acumuladas na catraca
-interface TransacaoOffline {
-  id: string;
-  cartao_id: string;
-  tipo: 'debito';
-  valor: number;
-  local_validador_id: string;
-  created_at: string;
-  // Apenas para exibição na CLI
-  numeroCartao: string;
-}
-
-// Persistência local das transações offline da catraca
-const OFFLINE_TX_FILE = path.join(__dirname, 'database/catraca_offline.json');
-
-function readOfflineTransactions(): TransacaoOffline[] {
-  if (!fs.existsSync(OFFLINE_TX_FILE)) return [];
-  try {
-    const content = fs.readFileSync(OFFLINE_TX_FILE, 'utf8');
-    return JSON.parse(content);
-  } catch {
-    return [];
-  }
-}
-
-function writeOfflineTransactions(txs: TransacaoOffline[]) {
-  const dir = path.dirname(OFFLINE_TX_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(OFFLINE_TX_FILE, JSON.stringify(txs, null, 2), 'utf8');
-}
-
-let offlineTransactions: TransacaoOffline[] = readOfflineTransactions();
+let validadorId = process.env.VALIDADOR_ID || '1203'; // ID do validador configurável via .env
 
 // Helper para requisições HTTP seguras
 async function request(endpoint: string, method = 'GET', body: any = null, requiresAuth = true): Promise<any> {
@@ -129,16 +95,12 @@ function printHeader(title: string) {
 // Desenha rodapé compacto com status de conexão
 function printFooter() {
   console.log(`${colors.fgCyan}----------------------------------------------------------------${colors.reset}`);
-  
-  const valStr = isValidadorOnline ? 'ONLINE' : `OFFLINE (Bus ${validadorId})`;
-  const valCol = isValidadorOnline ? colors.fgGreen : colors.fgRed;
-  const countStr = offlineTransactions.length > 0 ? ` | Fila: ${offlineTransactions.length}` : '';
-  
-  const userStr = loggedUser 
-    ? `👤 Passageiro: ${loggedUser.nome.split(' ')[0]}` 
+
+  const userStr = loggedUser
+    ? `👤 Passageiro: ${loggedUser.nome.split(' ')[0]}`
     : '👤 Não autenticado';
 
-  console.log(`${valCol}● ${valStr}${colors.reset}${countStr} | ${userStr}`);
+  console.log(`● ONLINE (Validador ${validadorId}) | ${userStr}`);
   console.log(`${colors.bright}${colors.fgCyan}================================================================${colors.reset}\n`);
 }
 
@@ -270,26 +232,6 @@ async function menuValidador() {
   }
 }
 
-async function alternarConexao() {
-  isValidadorOnline = !isValidadorOnline;
-  printHeader('Conexão e Rede');
-  console.log(`${colors.fgYellow}Status da conexão alterado para: ${isValidadorOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴'}${colors.reset}\n`);
-
-  if (isValidadorOnline && offlineTransactions.length > 0) {
-    console.log(`${colors.bright}${colors.fgCyan}📡 Sinal de rede restabelecido! Sincronizando automaticamente ${offlineTransactions.length} transação(ões) salva(s) no JSON reserva...${colors.reset}`);
-    await new Promise(r => setTimeout(r, 1000));
-    await sincronizarOffline(true);
-  } else if (isValidadorOnline) {
-    console.log(`${colors.fgGreen}Dispositivo conectado e sincronizado com o servidor central.${colors.reset}`);
-    console.log('\nPressione Enter para continuar...');
-    await question('');
-  } else {
-    console.log(`${colors.fgRed}Modo contingência ativado. As passagens registradas na catraca serão gravadas localmente.${colors.reset}`);
-    console.log('\nPressione Enter para continuar...');
-    await question('');
-  }
-}
-
 // ----------------------------------------------------
 // MENU PRINCIPAL (logado) — equivalente à tela Home
 // Espelha: Home → seções principais do app web
@@ -299,8 +241,7 @@ async function menuLogado() {
   console.log('  1. 👤 Meu Perfil');
   console.log('  2. 💳 Gerenciar Cartões');
   console.log('  3. 🚌 Validador');
-  console.log('  4. 🌐 Alternar Conexão');
-  console.log('  5. 📅 Consultar Itinerários de Pelotas');
+  console.log('  4. 📅 Consultar Itinerários de Pelotas');
   console.log('  0. 🚪 Sair');
   printFooter();
 
@@ -316,9 +257,6 @@ async function menuLogado() {
       await menuValidador();
       break;
     case '4':
-      await alternarConexao();
-      break;
-    case '5':
       await verItinerarios();
       break;
     case '0':
@@ -628,55 +566,14 @@ async function simularValidador() {
       return;
     }
 
-    if (isValidadorOnline) {
-      // ----------------------------------------------------
-      // VALIDAÇÃO ONLINE (VIA API REST)
-      // ----------------------------------------------------
-      console.log(`\n${colors.fgYellow}Aproximando cartão no validador...${colors.reset}`);
-      const resultado = await request('/validador/embarque', 'POST', {
-        cartaoId: selecionado.id,
-        validadorId
-      }, false);
+    // Sempre usa a API do backend para processar embarque (regras de negócio no backend)
+    console.log(`\n${colors.fgYellow}Aproximando cartão no validador...${colors.reset}`);
+    const resultado = await request('/validador/embarque', 'POST', {
+      cartaoId: selecionado.id,
+      validadorId
+    }, false);
 
-      desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero, true);
-    } else {
-      // ----------------------------------------------------
-      // VALIDAÇÃO OFFLINE (SIMULAÇÃO LOCAL NO VALIDADOR)
-      // ----------------------------------------------------
-      console.log(`\n${colors.fgYellow}Aproximando cartão no validador (OFFLINE)...${colors.reset}`);
-      
-      // Determinar tarifa local
-      let tarifa = 5.00;
-      if (selecionado.tipo === 'estudante') tarifa = 2.50;
-      if (selecionado.tipo === 'idoso') tarifa = 0.00;
-
-      const saldoAnterior = Number(selecionado.saldo);
-      if (saldoAnterior < tarifa) {
-        desenharPainelValidador(false, tarifa, saldoAnterior, 'Saldo Insuficiente', selecionado.numero, false);
-      } else {
-        const saldoAtual = saldoAnterior - tarifa;
-        // Registrar transação na fila offline local do validador (CLI)
-        const txOfflineId = 'off_' + Math.random().toString(36).substring(2, 11);
-        
-        const novaTxOffline: TransacaoOffline = {
-          id: txOfflineId,
-          cartao_id: selecionado.id,
-          tipo: 'debito',
-          valor: tarifa,
-          local_validador_id: validadorId,
-          created_at: new Date().toISOString(),
-          numeroCartao: selecionado.numero
-        };
-        
-        offlineTransactions.push(novaTxOffline);
-        writeOfflineTransactions(offlineTransactions);
-        
-        // Atualiza o saldo local na memória
-        selecionado.saldo = saldoAtual;
-
-        desenharPainelValidador(true, tarifa, saldoAtual, 'Embarque Autorizado (OFFLINE)', selecionado.numero, false);
-      }
-    }
+    desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero, true);
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Erro de validação: ${err.message}${colors.reset}`);
   }
@@ -716,60 +613,6 @@ function desenharPainelValidador(
   console.log(`${border}│      Saldo Atual:    R$ ${saldo.toFixed(2).padEnd(38)} │`);
   console.log(`${border}│                                                              │${colors.reset}`);
   console.log(`${border}└──────────────────────────────────────────────────────────────┘${colors.reset}`);
-}
-
-async function sincronizarOffline(isAutomatico = false) {
-  if (!isAutomatico) {
-    printHeader('Sincronizar Transações Offline');
-  }
-
-  if (!isValidadorOnline) {
-    console.log(`${colors.fgRed}❌ Operação não permitida no modo OFFLINE!${colors.reset}`);
-    console.log('O validador precisa estar ONLINE para conectar ao servidor e transmitir o lote.');
-    if (!isAutomatico) {
-      console.log('\nPressione Enter para voltar...');
-      await question('');
-    }
-    return;
-  }
-
-  if (offlineTransactions.length === 0) {
-    if (!isAutomatico) {
-      console.log('Não existem transações offline pendentes na fila do validador.');
-      console.log('\nPressione Enter para voltar...');
-      await question('');
-    }
-    return;
-  }
-
-  if (!isAutomatico) {
-    console.log(`Existem ${offlineTransactions.length} transações no arquivo JSON reserva da catraca ${validadorId}.`);
-    const conf = await question('Deseja transmitir as transações para a nuvem agora? (S/N): ');
-    if (conf.toUpperCase() !== 'S') return;
-  }
-
-  try {
-    console.log(`\n${colors.fgYellow}Enviando lote do JSON reserva (${offlineTransactions.length} item/itens) para o banco de dados...${colors.reset}`);
-    // Limpa a propriedade extra da CLI antes de enviar
-    const dadosEnvio = offlineTransactions.map(({ numeroCartao, ...rest }) => rest);
-    
-    const resultado = await request('/validador/sincronizar', 'POST', { transacoes: dadosEnvio }, false);
-    
-    console.log(`\n${colors.fgGreen}✅ Sincronização automática concluída com sucesso!${colors.reset}`);
-    console.log(`Transações gravadas no banco: ${resultado.processadas}`);
-    if (resultado.erros.length > 0) {
-      console.log(`${colors.fgRed}Falhas durante o envio:${colors.reset}`);
-      resultado.erros.forEach((e: string) => console.log(`  - ${e}`));
-    }
-    // Esvazia a fila offline e limpa o arquivo JSON físico reserva
-    offlineTransactions = [];
-    writeOfflineTransactions([]);
-  } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro na sincronização: ${err.message}${colors.reset}`);
-  }
-
-  console.log('\nPressione Enter para continuar...');
-  await question('');
 }
 
 async function verHistorico() {
