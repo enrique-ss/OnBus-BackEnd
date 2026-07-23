@@ -58,12 +58,32 @@ export class CatracaService {
     }
 
     if (cartao.status !== 'ativo') {
+      const agora = new Date();
+      const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+      const diaAtual = diasSemana[agora.getDay()];
+      const horarioAtual = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const mensagem = `Acesso negado: Cartão ${cartao.status}.`;
+
+      await db.historicos.insert({
+        id: randomUUID(),
+        cartao_id: cartaoId,
+        catraca_id: catracaId,
+        cartao_numero: cartao.numero,
+        catraca_nome: catraca.nome,
+        tarifa: 0,
+        autorizado: 'nao',
+        mensagem,
+        dia: diaAtual,
+        horario: horarioAtual,
+        created_at: agora.toISOString()
+      });
+
       return {
         autorizado: false,
         saldoAnterior: Number(cartao.saldo),
         saldoAtual: Number(cartao.saldo),
         tarifa: 0,
-        mensagem: `Acesso negado: Cartão ${cartao.status}.`,
+        mensagem,
         cartaoNumero: cartao.numero
       };
     }
@@ -72,12 +92,32 @@ export class CatracaService {
     const saldoAnterior = Number(cartao.saldo);
 
     if (saldoAnterior < tarifa) {
+      const agora = new Date();
+      const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+      const diaAtual = diasSemana[agora.getDay()];
+      const horarioAtual = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const mensagem = 'Acesso negado: Saldo insuficiente.';
+
+      await db.historicos.insert({
+        id: randomUUID(),
+        cartao_id: cartaoId,
+        catraca_id: catracaId,
+        cartao_numero: cartao.numero,
+        catraca_nome: catraca.nome,
+        tarifa,
+        autorizado: 'nao',
+        mensagem,
+        dia: diaAtual,
+        horario: horarioAtual,
+        created_at: agora.toISOString()
+      });
+
       return {
         autorizado: false,
         saldoAnterior,
         saldoAtual: saldoAnterior,
         tarifa,
-        mensagem: 'Acesso negado: Saldo insuficiente.',
+        mensagem,
         cartaoNumero: cartao.numero
       };
     }
@@ -86,43 +126,25 @@ export class CatracaService {
     const saldoAtual = saldoAnterior - tarifa;
     await db.cartoes.update({ id: cartaoId }, { saldo: saldoAtual, updated_at: new Date().toISOString() });
 
-    // Adicionar validação ao histórico da catraca (JSON)
-    const historicoAtual = catraca?.historico ? JSON.parse(catraca.historico) : [];
+    // Adicionar validação à tabela de históricos
     const agora = new Date();
     const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const diaAtual = diasSemana[agora.getDay()];
     const horarioAtual = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
-    const novaValidacao = {
+    await db.historicos.insert({
       id: randomUUID(),
       cartao_id: cartaoId,
-      cartao_numero: cartao.numero,
-      tarifa,
-      autorizado: 'sim',
-      mensagem: 'Embarque Autorizado!',
-      linha: catraca.nome,
-      dia: diaAtual,
-      horario: horarioAtual,
-      created_at: new Date().toISOString()
-    };
-    historicoAtual.push(novaValidacao);
-    await db.catracas.update({ id: catracaId }, { historico: JSON.stringify(historicoAtual) });
-
-    // Adicionar validação ao histórico do cartão (JSON)
-    const historicoCartao = cartao.historico ? JSON.parse(cartao.historico) : [];
-    const novaValidacaoCartao = {
-      id: novaValidacao.id,
       catraca_id: catracaId,
+      cartao_numero: cartao.numero,
       catraca_nome: catraca.nome,
       tarifa,
       autorizado: 'sim',
       mensagem: 'Embarque Autorizado!',
       dia: diaAtual,
       horario: horarioAtual,
-      created_at: new Date().toISOString()
-    };
-    historicoCartao.push(novaValidacaoCartao);
-    await db.cartoes.update({ id: cartaoId }, { historico: JSON.stringify(historicoCartao), updated_at: new Date().toISOString() });
+      created_at: agora.toISOString()
+    });
 
     const duration = Date.now() - startTime;
     console.log(`[Catraca ${catracaId}] Embarque autorizado online para cartão ${cartao.numero} em ${duration}ms.`);
@@ -193,33 +215,17 @@ export class CatracaService {
         
         await db.cartoes.update({ id: tx.cartao_id }, { saldo: novoSaldo, updated_at: new Date().toISOString() });
 
-        // Adiciona validação ao histórico da catraca (JSON)
-        const historicoAtual = catraca?.historico ? JSON.parse(catraca.historico) : [];
+        // Adiciona validação à tabela de históricos
         const dataValidacao = new Date(tx.created_at);
         const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
         const diaValidacao = diasSemana[dataValidacao.getDay()];
         const horarioValidacao = dataValidacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        
-        const novaValidacao = {
+
+        await db.historicos.insert({
           id: tx.id,
           cartao_id: tx.cartao_id,
-          cartao_numero: cartao.numero,
-          tarifa: tx.valor,
-          autorizado: novoSaldo >= 0 ? 'sim' : 'nao',
-          mensagem: novoSaldo >= 0 ? 'Embarque Autorizado (Sincronizado)' : 'Saldo insuficiente (Sincronizado)',
-          linha: catraca.nome,
-          dia: diaValidacao,
-          horario: horarioValidacao,
-          created_at: tx.created_at
-        };
-        historicoAtual.push(novaValidacao);
-        await db.catracas.update({ id: catracaId }, { historico: JSON.stringify(historicoAtual) });
-
-        // Adiciona validação ao histórico do cartão (JSON)
-        const historicoCartao = cartao.historico ? JSON.parse(cartao.historico) : [];
-        const novaValidacaoCartao = {
-          id: tx.id,
           catraca_id: catracaId,
+          cartao_numero: cartao.numero,
           catraca_nome: catraca.nome,
           tarifa: tx.valor,
           autorizado: novoSaldo >= 0 ? 'sim' : 'nao',
@@ -227,9 +233,8 @@ export class CatracaService {
           dia: diaValidacao,
           horario: horarioValidacao,
           created_at: tx.created_at
-        };
-        historicoCartao.push(novaValidacaoCartao);
-        await db.cartoes.update({ id: tx.cartao_id }, { historico: JSON.stringify(historicoCartao), updated_at: new Date().toISOString() });
+        });
+
         processadas++;
       } catch (err: any) {
         erros.push(`Erro ao processar transação ${tx.id}: ${err.message}`);

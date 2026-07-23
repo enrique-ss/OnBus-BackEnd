@@ -697,8 +697,8 @@ async function verHistoricoCatraca() {
           ? `${colors.fgGreen}AUTORIZADO` 
           : `${colors.fgRed}NEGADO`;
         console.log(`  [${dataStr}] ${statusStr} Cartão: ${v.cartao_numero} Tarifa: R$ ${Number(v.tarifa).toFixed(2)}${colors.reset}`);
-        if (v.linha) {
-          console.log(`         Linha: ${v.linha}`);
+        if (v.catraca_nome || v.linha) {
+          console.log(`         Linha: ${v.catraca_nome || v.linha}`);
         }
         if (v.dia && v.horario) {
           console.log(`         Dia: ${v.dia} Horário: ${v.horario}`);

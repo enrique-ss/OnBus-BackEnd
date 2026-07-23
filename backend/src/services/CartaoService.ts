@@ -34,7 +34,6 @@ export class CartaoService {
       saldo: 0.00,
       status: 'ativo',
       theme_url: themeUrl || null,
-      historico: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

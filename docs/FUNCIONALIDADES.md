@@ -29,9 +29,14 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
   "nome": "João Silva",
   "cpf": "12345678901",
   "email": "joao@email.com",
-  "senha": "senha123"
+  "senha": "senha123",
+  "tipo": "comum"
 }
 ```
+
+**Tipos de usuário:**
+- `comum`: Usuário padrão (padrão)
+- `admin`: Administrador com acesso a histórico de catracas
 
 **Validações:**
 - CPF deve ter 11 dígitos numéricos
@@ -46,6 +51,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
   "nome": "João Silva",
   "cpf": "12345678901",
   "email": "joao@email.com",
+  "tipo": "comum",
   "status": "ativo",
   "created_at": "2024-01-01T00:00:00.000Z"
 }
@@ -387,18 +393,18 @@ Ao acessar a opção de recarga no CLI:
 
 ### Processar Embarque
 
-**Endpoint:** `POST /validador/embarque`
+**Endpoint:** `POST /api/catraca/embarque`
 
 **Corpo da requisição:**
 ```json
 {
   "cartaoId": "uuid-v4",
-  "validadorId": "1203"
+  "catracaId": "COHAB"
 }
 ```
 
 **Validações:**
-- Validador deve existir e estar ativo
+- Catraca deve existir e estar ativo
 - Cartão deve existir
 - Cartão deve estar ativo
 
@@ -409,8 +415,9 @@ Ao acessar a opção de recarga no CLI:
    - idoso: R$ 0,00
 2. Verifica saldo suficiente
 3. Debita tarifa do saldo
-4. Registra transação de débito
-5. Retorna resultado
+4. Registra validação no histórico da catraca (JSON)
+5. Registra validação no histórico do cartão (JSON)
+6. Retorna resultado
 
 **Resposta (sucesso):**
 ```json
@@ -450,11 +457,36 @@ Ao acessar a opção de recarga no CLI:
 
 ---
 
-## Histórico de Transações
+## Histórico de Validações
 
-### Listar Transações
+### Histórico do Cartão
 
-**Endpoint:** `GET /transacoes` (requer autenticação)
+**Endpoint:** `GET /cartoes/:id/historico` (requer autenticação)
+
+**Resposta:**
+```json
+[
+  {
+    "id": "uuid-v4",
+    "catraca_id": "COHAB",
+    "catraca_nome": "Cohab / Tablada (Laranjal)",
+    "tarifa": 5.00,
+    "autorizado": "sim",
+    "mensagem": "Embarque Autorizado!",
+    "dia": "segunda",
+    "horario": "14:30",
+    "created_at": "2024-01-01T14:30:00.000Z"
+  }
+]
+```
+
+**Armazenamento:**
+- Histórico é armazenado em JSON no campo `cartoes.historico`
+- Cada validação registra: catraca, linha, dia, horário, tarifa e status
+
+### Histórico de Recargas
+
+**Endpoint:** `GET /cartoes/:id/transacoes` (requer autenticação)
 
 **Resposta:**
 ```json
@@ -462,19 +494,9 @@ Ao acessar a opção de recarga no CLI:
   {
     "id": "uuid-v4",
     "cartao_id": "uuid-v4",
-    "tipo": "debito",
-    "valor": 5.00,
-    "status": "confirmado",
-    "local_validador_id": "1203",
-    "created_at": "2024-01-01T12:00:00.000Z"
-  },
-  {
-    "id": "uuid-v4",
-    "cartao_id": "uuid-v4",
     "tipo": "recarga",
     "valor": 50.00,
     "status": "confirmado",
-    "local_validador_id": "WEB_PIX",
     "created_at": "2024-01-01T10:00:00.000Z"
   }
 ]
@@ -482,7 +504,6 @@ Ao acessar a opção de recarga no CLI:
 
 **Tipos de transação:**
 - `recarga`: Entrada de dinheiro (Pix)
-- `debito`: Passagem na catraca
 
 **Status:**
 - `pendente`: Aguardando confirmação do Pix
@@ -491,23 +512,44 @@ Ao acessar a opção de recarga no CLI:
 
 ---
 
-## Validadores
+## Catracas
 
-### Obter Validador
+### Listar Catracas
 
-**Endpoint:** `GET /api/validadores/:id`
+**Endpoint:** `GET /api/catracas`
+
+**Resposta:**
+```json
+[
+  {
+    "id": "COHAB",
+    "nome": "Cohab / Tablada (Laranjal)",
+    "status": "ativo"
+  },
+  {
+    "id": "FRAGATA",
+    "nome": "Fragata via Guabiroba",
+    "status": "ativo"
+  }
+]
+```
+
+### Obter Catraca
+
+**Endpoint:** `GET /api/catracas/:id`
 
 **Resposta:**
 ```json
 {
-  "id": "1203",
+  "id": "COHAB",
+  "nome": "Cohab / Tablada (Laranjal)",
   "status": "ativo"
 }
 ```
 
 ### Obter Tarifas
 
-**Endpoint:** `GET /api/validadores/tarifas`
+**Endpoint:** `GET /api/catracas/tarifas`
 
 **Resposta:**
 ```json
@@ -518,20 +560,45 @@ Ao acessar a opção de recarga no CLI:
 }
 ```
 
+### Histórico de Validações da Catraca
+
+**Endpoint:** `GET /api/catracas/:id/validacoes` (apenas admin)
+
+**Validações:**
+- Requer autenticação
+- Usuário deve ser do tipo 'admin'
+
+**Resposta:**
+```json
+[
+  {
+    "id": "uuid-v4",
+    "cartao_id": "uuid-v4",
+    "cartao_numero": "10.01.123456",
+    "tarifa": 5.00,
+    "autorizado": "sim",
+    "mensagem": "Embarque Autorizado!",
+    "linha": "Cohab / Tablada (Laranjal)",
+    "dia": "segunda",
+    "horario": "14:30",
+    "created_at": "2024-01-01T14:30:00.000Z"
+  }
+]
+```
+
 ### Sincronizar Transações Offline
 
-**Endpoint:** `POST /api/validador/sincronizar`
+**Endpoint:** `POST /api/catraca/sincronizar`
 
 **Corpo da requisição:**
 ```json
 {
+  "catracaId": "COHAB",
   "transacoes": [
     {
       "id": "uuid-v4",
       "cartao_id": "uuid-v4",
-      "tipo": "debito",
       "valor": 5.00,
-      "local_validador_id": "1203",
       "created_at": "2024-01-01T12:00:00.000Z"
     }
   ]
@@ -539,12 +606,12 @@ Ao acessar a opção de recarga no CLI:
 ```
 
 **Processo:**
-1. Valida se validador existe e está ativo
+1. Valida se catraca existe e está ativa
 2. Para cada transação:
-   - Verifica se já existe no banco
    - Verifica se cartão existe
    - Debita saldo
-   - Insere transação
+   - Registra validação no histórico da catraca (JSON)
+   - Registra validação no histórico do cartão (JSON)
 3. Retorna quantidade processada e erros
 
 **Resposta:**
@@ -644,8 +711,9 @@ A CLI permite testar todos os fluxos do sistema sem dependência do frontend:
 | 4 | Recarregar via Pix | Verifica pendentes, gera código Pix ou paga pendentes |
 | 5 | Bloquear cartão | Bloqueia cartão ativo |
 | 6 | Solicitar segunda via | Emite novo cartão com saldo transferido |
-| 7 | Simular catraca | Simula aproximação do cartão na catraca |
-| 8 | Ver histórico | Mostra todas as transações |
+| 7 | Simular catraca | Seleciona destino e simula aproximação do cartão |
+| 8 | Ver histórico do cartão | Mostra histórico de validações do cartão |
+| 9 | Ver histórico da catraca | Seleciona catraca e mostra validações (apenas admin) |
 | 9 | Consultar itinerários | Lista linhas de ônibus de Pelotas |
 | 10 | Simular webhook | Simula confirmação de Pix |
 | 11 | Excluir conta | Exclui conta conforme LGPD |
@@ -658,11 +726,7 @@ npm run cli
 
 ### Configuração
 
-O CLI usa a variável `VALIDADOR_ID` do `.env` para simular a catraca:
-
-```env
-VALIDADOR_ID=1203
-```
+O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configurar ID hardcoded.
 
 ---
 

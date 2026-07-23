@@ -70,7 +70,8 @@ export class CartaoController {
       const cartao = await db.cartoes.findOne({ id: req.params.id as string, usuario_id: req.user!.id });
       if (!cartao) return res.status(404).json({ error: 'Cartão não encontrado.' });
 
-      const historico = cartao.historico ? JSON.parse(cartao.historico) : [];
+      const historico = await db.historicos.find({ cartao_id: req.params.id as string });
+      historico.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
       return res.status(200).json(historico);
     } catch (err: any) {
       return res.status(400).json({ error: err.message });

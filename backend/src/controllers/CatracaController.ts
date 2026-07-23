@@ -61,7 +61,8 @@ export class CatracaController {
       if (!catraca) {
         return res.status(404).json({ error: 'Catraca não encontrada.' });
       }
-      const historico = catraca.historico ? JSON.parse(catraca.historico) : [];
+      const historico = await db.historicos.find({ catraca_id: id });
+      historico.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
       return res.status(200).json(historico);
     } catch (err: any) {
       return res.status(400).json({ error: err.message });

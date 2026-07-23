@@ -25,7 +25,6 @@ export interface Cartao {
   saldo: number;
   status: 'ativo' | 'bloqueado' | 'cancelado';
   theme_url: string | null;
-  historico: string | null; // JSON com histórico de validações (catracas que passou)
   created_at: string;
   updated_at: string;
 }
@@ -43,7 +42,20 @@ export interface Catraca {
   id: string;
   nome: string;
   status: string;
-  historico: string | null; // JSON com histórico de validações
+}
+
+export interface Historico {
+  id: string;
+  cartao_id: string;
+  catraca_id: string;
+  cartao_numero: string;
+  catraca_nome: string;
+  tarifa: number;
+  autorizado: string; // sim/nao
+  mensagem?: string | null;
+  dia?: string | null;
+  horario?: string | null;
+  created_at?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,4 +123,5 @@ export const db = {
   cartoes: new KnexTableWrapper<Cartao>(knexInstance, 'cartoes'),
   transacoes: new KnexTableWrapper<Transacao>(knexInstance, 'transacoes'),
   catracas: new KnexTableWrapper<Catraca>(knexInstance, 'catracas'),
+  historicos: new KnexTableWrapper<Historico>(knexInstance, 'historicos'),
 };

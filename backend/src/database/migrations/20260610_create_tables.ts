@@ -23,7 +23,6 @@ export async function up(knex: Knex): Promise<void> {
     table.decimal('saldo', 8, 2).notNullable().defaultTo(0.00);
     table.string('status', 20).notNullable().defaultTo('ativo');
     table.string('theme_url', 255).nullable();
-    table.text('historico').defaultTo(null); // JSON com histórico de validações (catracas que passou)
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.fn.now());
   });
@@ -38,16 +37,31 @@ export async function up(knex: Knex): Promise<void> {
     table.timestamp('created_at').defaultTo(knex.fn.now());
   });
 
-  // Tabela de Catracas (com histórico em JSON)
+  // Tabela de Catracas
   await knex.schema.createTable('catracas', (table) => {
     table.string('id', 50).primary();
     table.string('nome', 100).notNullable(); // Nome da linha
     table.string('status', 20).notNullable().defaultTo('ativo');
-    table.text('historico'); // JSON com histórico de validações
+  });
+
+  // Tabela de Histórico de Validações
+  await knex.schema.createTable('historicos', (table) => {
+    table.string('id', 36).primary();
+    table.string('cartao_id', 36).notNullable().references('id').inTable('cartoes').onDelete('CASCADE');
+    table.string('catraca_id', 50).notNullable().references('id').inTable('catracas').onDelete('CASCADE');
+    table.string('cartao_numero', 20).notNullable(); // Número do cartão (para consulta rápida)
+    table.string('catraca_nome', 100).notNullable(); // Nome da linha (para consulta rápida)
+    table.decimal('tarifa', 8, 2).notNullable();
+    table.string('autorizado', 10).notNullable(); // sim/nao
+    table.string('mensagem', 255);
+    table.string('dia', 20); // Dia da semana
+    table.string('horario', 5); // Horário HH:MM
+    table.timestamp('created_at').defaultTo(knex.fn.now());
   });
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTableIfExists('historicos');
   await knex.schema.dropTableIfExists('transacoes');
   await knex.schema.dropTableIfExists('cartoes');
   await knex.schema.dropTableIfExists('catracas');
