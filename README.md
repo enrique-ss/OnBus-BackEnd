@@ -2,19 +2,19 @@
 
 API REST em Node.js + TypeScript para sistema de bilhetagem eletrônica de transporte coletivo.
 
-## 📋 Pré-requisitos
+## Pré-requisitos
 
 - Node.js 18+
 - npm
 
-## 🚀 Instalação
+## Instalação
 
 ```bash
 npm install
 cp .env.example .env
 ```
 
-## ⚙️ Configuração
+## Configuração
 
 Variáveis de ambiente (`.env`):
 
@@ -26,7 +26,7 @@ WEBHOOK_SECRET=sua_chave_webhook
 VALIDADOR_ID=1203
 ```
 
-## 📦 Comandos
+## Comandos
 
 ### Executar Backend
 
@@ -46,7 +46,7 @@ npm run cli
 npm run setup
 ```
 
-## 🧪 CLI de Testes
+## CLI de Testes
 
 Interface interativa para testar todos os fluxos do sistema:
 
@@ -64,7 +64,7 @@ Interface interativa para testar todos os fluxos do sistema:
 | 10 | Simular confirmação de Pix via Webhook |
 | 11 | Excluir conta (LGPD) |
 
-## � Estrutura
+## Estrutura
 
 ```
 backend/
@@ -83,7 +83,7 @@ backend/
 └── package.json
 ```
 
-## �️ Tecnologias
+## Tecnologias
 
 - Node.js + TypeScript
 - Express.js
