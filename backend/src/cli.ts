@@ -100,7 +100,7 @@ function printFooter() {
     ? `👤 Passageiro: ${loggedUser.nome.split(' ')[0]}`
     : '👤 Não autenticado';
 
-  console.log(`● ONLINE (Validador ${validadorId}) | ${userStr}`);
+  console.log(`${userStr}`);
   console.log(`${colors.bright}${colors.fgCyan}================================================================${colors.reset}\n`);
 }
 
@@ -442,6 +442,30 @@ async function solicitarCartao() {
 async function recarregarCartao() {
   printHeader('Recarregar Cartão');
   try {
+    // Verificar recargas pendentes primeiro
+    const pendentes = await request('/transacoes/pendentes', 'GET');
+    if (pendentes && pendentes.length > 0) {
+      console.log(`${colors.fgYellow}⚠️  Você tem ${pendentes.length} recarga(s) pendente(s):${colors.reset}`);
+      pendentes.forEach((p: any, idx: number) => {
+        console.log(`   ${idx + 1}. R$ ${Number(p.valor).toFixed(2)} - ${p.id.substring(0, 8)}... (${new Date(p.created_at).toLocaleString('pt-BR')})`);
+      });
+      
+      const opcao = await question(`\nDigite o número da recarga para pagar (ou 0 para criar nova): `);
+      const idx = parseInt(opcao);
+      
+      if (idx > 0 && idx <= pendentes.length) {
+        const selecionada = pendentes[idx - 1];
+        await pagarRecargaPendente(selecionada);
+        console.log('\nPressione Enter para voltar...');
+        await question('');
+        return;
+      } else if (idx === 0) {
+        console.log(`${colors.fgCyan}Continuando com nova recarga...${colors.reset}\n`);
+      } else {
+        console.log(`${colors.fgRed}Opção inválida. Continuando com nova recarga...${colors.reset}\n`);
+      }
+    }
+
     const cartoes = await request('/cartoes', 'GET');
     const selecionado = cartoes.find((c: any) => c.status === 'ativo');
     if (!selecionado) {
@@ -500,6 +524,18 @@ async function recarregarCartao() {
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
+}
+
+async function pagarRecargaPendente(pendente: any) {
+  printHeader('Pagar Recarga Pendente');
+  
+  try {
+    console.log(`\nPagando R$ ${Number(pendente.valor).toFixed(2)} (${pendente.id.substring(0, 8)}...)...`);
+    await request(`/transacoes/${pendente.id}/pagar`, 'POST');
+    console.log(`${colors.fgGreen}✅ Pago com sucesso!${colors.reset}`);
+  } catch (err: any) {
+    console.log(`${colors.fgRed}❌ Erro ao pagar: ${err.message}${colors.reset}`);
+  }
 }
 
 async function bloquearCartao() {
@@ -573,7 +609,7 @@ async function simularValidador() {
       validadorId
     }, false);
 
-    desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero, true);
+    desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero);
   } catch (err: any) {
     console.log(`\n${colors.fgRed}❌ Erro de validação: ${err.message}${colors.reset}`);
   }
@@ -587,13 +623,8 @@ function desenharPainelValidador(
   tarifa: number,
   saldo: number,
   mensagem: string,
-  numeroCartao: string,
-  isOnline: boolean
+  numeroCartao: string
 ) {
-  const statusConexao = isOnline 
-    ? `${colors.fgGreen}CONEXÃO: ONLINE${colors.reset}` 
-    : `${colors.fgRed}CONEXÃO: OFFLINE (CONTINGÊNCIA)${colors.reset}`;
-
   const border = autorizado ? colors.fgGreen : colors.fgRed;
   const msgStyle = autorizado 
     ? `${colors.bright}${colors.fgGreen}>>> ${mensagem} <<<${colors.reset}`
@@ -602,7 +633,6 @@ function desenharPainelValidador(
   console.log(`\n${border}┌──────────────────────────────────────────────────────────────┐${colors.reset}`);
   console.log(`${border}│                     VALIDADOR ONBUS                          │${colors.reset}`);
   console.log(`${border}├──────────────────────────────────────────────────────────────┤${colors.reset}`);
-  console.log(`${border}│ ${statusConexao.padEnd(52)} │`);
   console.log(`${border}│ Validador ID: ${validadorId.padEnd(46)} │`);
   console.log(`${border}│ Cartão: ${numeroCartao.padEnd(52)} │`);
   console.log(`${border}├──────────────────────────────────────────────────────────────┤${colors.reset}`);

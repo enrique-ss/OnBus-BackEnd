@@ -65,6 +65,24 @@ export class CartaoController {
     }
   }
 
+  static async listarPendentes(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const pendentes = await CartaoService.listarPendentes(req.user!.id);
+      return res.status(200).json(pendentes);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async pagarPendente(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const transacaoConfirmada = await CartaoService.pagarPendente(req.params.id as string, req.user!.id);
+      return res.status(200).json(transacaoConfirmada);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
   static async processarWebhookPagamento(req: any, res: Response): Promise<any> {
     try {
       const { transaction_id, amount } = req.body;

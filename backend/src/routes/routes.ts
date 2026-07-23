@@ -34,6 +34,8 @@ router.post('/api/cartoes/:id/bloquear', authMiddleware, CartaoController.bloque
 router.post('/api/cartoes/:id/segunda-via', authMiddleware, CartaoController.solicitarSegundaVia);
 router.post('/api/cartoes/:id/recarregar', authMiddleware, CartaoController.recarregar);
 router.get('/api/cartoes/:id/transacoes', authMiddleware, CartaoController.listarTransacoes);
+router.get('/api/transacoes/pendentes', authMiddleware, CartaoController.listarPendentes);
+router.post('/api/transacoes/:id/pagar', authMiddleware, CartaoController.pagarPendente);
 
 // Webhook do Gateway de Pagamento (Simulado)
 router.post('/api/webhooks/pagamentos', WebhookController.pagamentos);

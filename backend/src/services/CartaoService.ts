@@ -133,6 +133,55 @@ export class CartaoService {
     return { transacao: novaTransacao, pixCopiaCola };
   }
 
+  static async listarPendentes(usuarioId: string): Promise<Transacao[]> {
+    // Busca todos os cartões do usuário
+    const cartoes = await db.cartoes.find({ usuario_id: usuarioId });
+    
+    // Busca transações pendentes de recarga para cada cartão
+    const todasPendentes: Transacao[] = [];
+    for (const cartao of cartoes) {
+      const pendentesCartao = await db.transacoes.find({
+        cartao_id: cartao.id,
+        tipo: 'recarga',
+        status: 'pendente'
+      });
+      todasPendentes.push(...pendentesCartao);
+    }
+    
+    // Ordena por data (mais recentes primeiro)
+    return todasPendentes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  static async pagarPendente(transacaoId: string, usuarioId: string): Promise<Transacao> {
+    const transacao = await db.transacoes.findOne({ id: transacaoId });
+    if (!transacao) {
+      throw new Error('Transação não encontrada.');
+    }
+
+    if (transacao.status !== 'pendente') {
+      throw new Error(`Esta transação já foi processada anteriormente com status: ${transacao.status}`);
+    }
+
+    // Verifica se o cartão pertence ao usuário
+    const cartao = await db.cartoes.findOne({ id: transacao.cartao_id, usuario_id: usuarioId });
+    if (!cartao) {
+      throw new Error('Cartão associado à transação não encontrado ou não pertence ao usuário.');
+    }
+
+    // Libera o saldo no cartão
+    const valor = Number(transacao.valor);
+    const novoSaldo = Number(cartao.saldo) + valor;
+    await db.cartoes.update({ id: transacao.cartao_id }, { saldo: novoSaldo, updated_at: new Date().toISOString() });
+
+    // Confirma a transação
+    await db.transacoes.update({ id: transacaoId }, { status: 'confirmado' });
+
+    return {
+      ...transacao,
+      status: 'confirmado'
+    };
+  }
+
   static async processarWebhookPagamento(transacaoId: string, valor: number): Promise<Transacao> {
     const transacao = await db.transacoes.findOne({ id: transacaoId });
     if (!transacao) {

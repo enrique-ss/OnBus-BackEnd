@@ -4,41 +4,41 @@ CREATE DATABASE IF NOT EXISTS onbus_local;
 USE onbus_local;
 
 CREATE TABLE IF NOT EXISTS usuarios (
-  id VARCHAR(36) PRIMARY KEY,
-  nome VARCHAR(100) NOT NULL,
-  cpf VARCHAR(11) NOT NULL UNIQUE,
-  email VARCHAR(100) NOT NULL UNIQUE,
-  senha VARCHAR(255) NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'ativo',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  id VARCHAR(36) PRIMARY KEY, -- UUID do usuário
+  nome VARCHAR(100) NOT NULL, -- Nome completo
+  cpf VARCHAR(11) NOT NULL UNIQUE, -- CPF (11 dígitos)
+  email VARCHAR(100) NOT NULL UNIQUE, -- Email para login
+  senha VARCHAR(255) NOT NULL, -- Senha hasheada
+  status VARCHAR(20) NOT NULL DEFAULT 'ativo', -- ativo/inativo
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data de cadastro
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP -- Última atualização
 );
 
 CREATE TABLE IF NOT EXISTS cartoes (
-  id VARCHAR(36) PRIMARY KEY,
-  numero VARCHAR(20) NOT NULL UNIQUE,
-  usuario_id VARCHAR(36) NOT NULL,
-  tipo VARCHAR(20) NOT NULL,
-  saldo DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
-  status VARCHAR(20) NOT NULL DEFAULT 'ativo',
-  theme_url VARCHAR(255) DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id VARCHAR(36) PRIMARY KEY, -- UUID do cartão
+  numero VARCHAR(20) NOT NULL UNIQUE, -- Número físico do cartão
+  usuario_id VARCHAR(36) NOT NULL, -- FK para usuarios
+  tipo VARCHAR(20) NOT NULL, -- comum/estudante/idoso
+  saldo DECIMAL(8, 2) NOT NULL DEFAULT 0.00, -- Saldo em reais
+  status VARCHAR(20) NOT NULL DEFAULT 'ativo', -- ativo/bloqueado/cancelado
+  theme_url VARCHAR(255) DEFAULT NULL, -- URL do tema personalizado
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data de emissão
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Última alteração
   FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS transacoes (
-  id VARCHAR(36) PRIMARY KEY,
-  cartao_id VARCHAR(36) NOT NULL,
-  tipo VARCHAR(20) NOT NULL,
-  valor DECIMAL(8, 2) NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'confirmado',
-  local_validador_id VARCHAR(50) DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  id VARCHAR(36) PRIMARY KEY, -- UUID da transação
+  cartao_id VARCHAR(36) NOT NULL, -- FK para cartoes
+  tipo VARCHAR(20) NOT NULL, -- recarga/debito
+  valor DECIMAL(8, 2) NOT NULL, -- Valor da transação
+  status VARCHAR(20) NOT NULL DEFAULT 'confirmado', -- pendente/confirmado/falho
+  local_validador_id VARCHAR(50) DEFAULT NULL, -- FK para validadores
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data da transação
   FOREIGN KEY (cartao_id) REFERENCES cartoes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS validadores (
-  id VARCHAR(50) PRIMARY KEY,
-  status VARCHAR(20) NOT NULL DEFAULT 'ativo'
+  id VARCHAR(50) PRIMARY KEY, -- ID da catraca/validador
+  status VARCHAR(20) NOT NULL DEFAULT 'ativo' -- ativo/inativo
 );
