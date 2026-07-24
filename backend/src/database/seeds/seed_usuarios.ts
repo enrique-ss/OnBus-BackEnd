@@ -29,6 +29,17 @@ export async function seed(knex: Knex): Promise<void> {
       status: 'ativo',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
+    },
+    {
+      id: '550e8400-e29b-41d4-a716-446655440002',
+      nome: 'Expresso Pelotense',
+      cpf: '55555555500',
+      email: 'empresa@onbus.com',
+      senha: senhaHash,
+      tipo: 'empresa',
+      status: 'ativo',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ]);
 }

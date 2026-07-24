@@ -112,6 +112,7 @@ export class CartaoService {
     }
 
     const transacaoId = randomUUID();
+    const taxaServico = Number((valor * 0.02).toFixed(2)); // Taxa de conveniência de 2%
     
     // Registra transação como PENDENTE (aguardando webhook do Pix)
     const novaTransacao: Transacao = {
@@ -119,6 +120,7 @@ export class CartaoService {
       cartao_id: cartaoId,
       tipo: 'recarga',
       valor,
+      taxa_servico: taxaServico,
       status: 'pendente', // Mantém pendente
       created_at: new Date().toISOString()
     };

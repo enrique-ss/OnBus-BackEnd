@@ -836,3 +836,24 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 
 ### Webhooks
 - `POST /webhook/pix` - Confirmar Pix
+
+---
+
+## Funcionalidades de Escalabilidade (Monetização e Gestão)
+
+### 🌟 Clube de Benefícios OnBus
+- `POST /api/profile/clube` - Assinar clube de benefícios. Ativa o status premium do usuário no banco de dados e define a data de expiração da assinatura de 1 ano.
+
+### 🏢 Painel de Controle B2B (Empresa Parceira)
+- `POST /api/empresa/frotas` - Cadastrar novo ônibus na frota da empresa (requer autenticação de conta do tipo `'empresa'`).
+- `GET /api/empresa/frotas` - Listar todos os veículos cadastrados na frota da empresa parceira autenticada.
+- `POST /api/empresa/motoristas` - Cadastrar novo motorista vinculado à empresa parceira (requer tipo `'empresa'`).
+- `GET /api/empresa/motoristas` - Listar motoristas cadastrados pela empresa parceira.
+
+### ✈️ Excursões e Viagens
+- `POST /api/empresa/excursoes` - Publicar nova excursão / viagem privada (requer tipo `'empresa'`). O campo `patrocinio_valor` opcional permite pagar um destaque.
+- `GET /api/excursoes` - Listar todas as excursões ativas. Ordenado automaticamente por `patrocinio_valor` de forma decrescente para priorizar no topo os anúncios patrocinados.
+
+### 💵 Taxa de Conveniência
+- O backend calcula automaticamente uma taxa de 2% sobre o valor solicitado nas recargas via Pix, persistida na coluna `taxa_servico` da tabela `transacoes`.
+

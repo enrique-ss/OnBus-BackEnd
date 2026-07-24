@@ -7,6 +7,7 @@ import { CartaoController } from '../controllers/CartaoController';
 import { WebhookController } from '../controllers/WebhookController';
 import { CatracaController } from '../controllers/CatracaController';
 import { ItinerarioController } from '../controllers/ItinerarioController';
+import { FuturoController } from '../controllers/FuturoController';
 
 const router = Router();
 
@@ -59,5 +60,22 @@ router.get('/api/catracas/tarifas', CatracaController.obterTarifas);
 
 router.get('/api/itinerarios', ItinerarioController.listarHorarios);
 router.get('/api/itinerarios/:id', ItinerarioController.getHorariosPorLinha);
+
+// ----------------------------------------------------
+// ROTAS DE FUNCIONALIDADES FUTURAS (ESCALABILIDADE)
+// ----------------------------------------------------
+
+// Clube de Benefícios (Passageiro)
+router.post('/api/profile/clube', authMiddleware, FuturoController.subscribeClube);
+
+// Gestão B2B (Frotas e Motoristas)
+router.post('/api/empresa/frotas', authMiddleware, FuturoController.cadastrarFrota);
+router.get('/api/empresa/frotas', authMiddleware, FuturoController.listarFrota);
+router.post('/api/empresa/motoristas', authMiddleware, FuturoController.cadastrarMotorista);
+router.get('/api/empresa/motoristas', authMiddleware, FuturoController.listarMotoristas);
+
+// Excursões (Divulgação B2B/B2C)
+router.post('/api/empresa/excursoes', authMiddleware, FuturoController.cadastrarExcursao);
+router.get('/api/excursoes', FuturoController.listarExcursoes);
 
 export default router;

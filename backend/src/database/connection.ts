@@ -11,8 +11,10 @@ export interface Usuario {
   cpf: string;
   email: string;
   senha: string;
-  tipo: 'comum' | 'admin';
+  tipo: 'comum' | 'admin' | 'empresa' | 'admin_frota';
   status: string;
+  clube_status?: string;
+  clube_expira_em?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +36,7 @@ export interface Transacao {
   cartao_id: string;
   tipo: 'recarga';
   valor: number;
+  taxa_servico?: number;
   status: 'pendente' | 'confirmado' | 'falho';
   created_at: string;
 }
@@ -42,6 +45,7 @@ export interface Catraca {
   id: string;
   nome: string;
   status: string;
+  empresa_id?: string | null;
 }
 
 export interface Historico {
@@ -57,6 +61,37 @@ export interface Historico {
   horario?: string | null;
   created_at?: string;
 }
+
+export interface Frota {
+  id: string;
+  empresa_id: string;
+  placa: string;
+  modelo: string;
+  ano: number;
+  status: 'ativo' | 'manutencao';
+  created_at?: string;
+}
+
+export interface Motorista {
+  id: string;
+  empresa_id: string;
+  nome: string;
+  cnh: string;
+  status: 'ativo' | 'inativo';
+  created_at?: string;
+}
+
+export interface Excursao {
+  id: string;
+  empresa_id: string;
+  titulo: string;
+  destino: string;
+  preco: number;
+  patrocinio_valor: number;
+  status: 'ativo' | 'cancelado' | 'finalizado';
+  created_at?: string;
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Interface genérica de acesso a tabelas
@@ -124,4 +159,7 @@ export const db = {
   transacoes: new KnexTableWrapper<Transacao>(knexInstance, 'transacoes'),
   catracas: new KnexTableWrapper<Catraca>(knexInstance, 'catracas'),
   historicos: new KnexTableWrapper<Historico>(knexInstance, 'historicos'),
+  frotas: new KnexTableWrapper<Frota>(knexInstance, 'frotas'),
+  motoristas: new KnexTableWrapper<Motorista>(knexInstance, 'motoristas'),
+  excursoes: new KnexTableWrapper<Excursao>(knexInstance, 'excursoes'),
 };

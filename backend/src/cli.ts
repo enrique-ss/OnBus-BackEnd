@@ -142,7 +142,8 @@ async function menuPerfil() {
     printHeader('Meu Perfil');
     console.log('  1. 👤 Visualizar Perfil');
     console.log('  2. ✏️  Editar Perfil');
-    console.log('  3. ⚠️  Excluir Conta');
+    console.log('  3. 🌟 Assinar Clube OnBus (Benefícios)');
+    console.log('  4. ⚠️  Excluir Conta');
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
@@ -155,6 +156,9 @@ async function menuPerfil() {
         await editarPerfil();
         break;
       case '3':
+        await assinarClubeOnBus();
+        break;
+      case '4':
         await excluirContaLGPD();
         if (!loggedUser) return; // Se a conta foi excluída (deslogado), retorna
         break;
@@ -241,39 +245,289 @@ async function menuCatraca() {
 // ----------------------------------------------------
 async function menuLogado() {
   printHeader('Home');
-  console.log('  1. 👤 Meu Perfil');
-  console.log('  2. 💳 Gerenciar Cartões');
-  console.log('  3. 🚌 Catraca');
-  console.log('  4. 📅 Consultar Itinerários de Pelotas');
-  console.log('  0. 🚪 Sair');
-  printFooter();
+  
+  if (loggedUser.tipo === 'empresa') {
+    // Menu da Empresa
+    console.log('  1. 👤 Meu Perfil');
+    console.log('  2. 🏢 Painel de Controle da Empresa');
+    console.log('  3. 📅 Consultar Itinerários de Pelotas');
+    console.log('  0. 🚪 Sair');
+    printFooter();
 
-  const opt = await question('Escolha uma opção: ');
-  switch (opt.trim()) {
-    case '1':
-      await menuPerfil();
-      break;
-    case '2':
-      await menuCartoes();
-      break;
-    case '3':
-      await menuCatraca();
-      break;
-    case '4':
-      await verItinerarios();
-      break;
-    case '0':
-      token = null;
-      loggedUser = null;
-      currentCards = [];
-      console.log(`${colors.fgGreen}Logout realizado com sucesso!${colors.reset}`);
-      await new Promise(r => setTimeout(r, 1000));
-      break;
-    default:
-      console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
-      await question('');
+    const opt = await question('Escolha uma opção: ');
+    switch (opt.trim()) {
+      case '1':
+        await menuPerfil();
+        break;
+      case '2':
+        await menuEmpresa();
+        break;
+      case '3':
+        await verItinerarios();
+        break;
+      case '0':
+        await realizarLogout();
+        break;
+      default:
+        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+        await question('');
+    }
+  } else if (loggedUser.tipo === 'admin') {
+    // Menu do Administrador
+    console.log('  1. 👤 Meu Perfil');
+    console.log('  2. 🚌 Histórico de Catracas (Linhas)');
+    console.log('  3. 📅 Consultar Itinerários de Pelotas');
+    console.log('  0. 🚪 Sair');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+    switch (opt.trim()) {
+      case '1':
+        await menuPerfil();
+        break;
+      case '2':
+        await menuCatraca();
+        break;
+      case '3':
+        await verItinerarios();
+        break;
+      case '0':
+        await realizarLogout();
+        break;
+      default:
+        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+        await question('');
+    }
+  } else {
+    // Menu do Passageiro Comum
+    console.log('  1. 👤 Meu Perfil');
+    console.log('  2. 💳 Gerenciar Cartões');
+    console.log('  3. 🚌 Simular Embarque (Catraca)');
+    console.log('  4. 📅 Consultar Itinerários de Pelotas');
+    console.log('  5. ✈️  Excursões e Viagens Disponíveis');
+    console.log('  0. 🚪 Sair');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+    switch (opt.trim()) {
+      case '1':
+        await menuPerfil();
+        break;
+      case '2':
+        await menuCartoes();
+        break;
+      case '3':
+        await simularCatraca();
+        break;
+      case '4':
+        await verItinerarios();
+        break;
+      case '5':
+        await verExcursoesDisponiveis();
+        break;
+      case '0':
+        await realizarLogout();
+        break;
+      default:
+        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+        await question('');
+    }
   }
 }
+
+async function realizarLogout() {
+  token = null;
+  loggedUser = null;
+  currentCards = [];
+  console.log(`${colors.fgGreen}Logout realizado com sucesso!${colors.reset}`);
+  await new Promise(r => setTimeout(r, 1000));
+}
+
+// ----------------------------------------------------
+// AÇÕES DO CLUBE & EMPRESA & EXCURSÕES
+// ----------------------------------------------------
+
+async function assinarClubeOnBus() {
+  printHeader('Clube de Benefícios OnBus');
+  console.log('Ao assinar o Clube OnBus por apenas R$ 9,90/mês, você garante:');
+  console.log(`  - ${colors.fgGreen}Remoção completa de anúncios${colors.reset} no app de trajetos`);
+  console.log(`  - ${colors.fgGreen}Temas VIP exclusivos${colors.reset} para personalizar seu cartão digital`);
+  console.log(`  - ${colors.fgGreen}Suporte prioritário 24h${colors.reset}`);
+  console.log('');
+
+  const opt = await question('Deseja confirmar a assinatura? (S/N): ');
+  if (opt.toUpperCase() !== 'S') return;
+
+  try {
+    const res = await request('/profile/clube', 'POST');
+    console.log(`\n${colors.fgGreen}✅ ${res.message}${colors.reset}`);
+    console.log(`Válido até: ${new Date(res.clube_expira_em).toLocaleDateString()}`);
+    loggedUser.clube_status = 'ativo';
+    loggedUser.clube_expira_em = res.clube_expira_em;
+  } catch (err: any) {
+    console.log(`\n${colors.fgRed}❌ Erro ao assinar: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para continuar...');
+  await question('');
+}
+
+async function menuEmpresa() {
+  while (true) {
+    printHeader('Painel de Controle - B2B');
+    console.log(`Empresa parceira: ${colors.bright}${loggedUser.nome}${colors.reset}\n`);
+    console.log('  1. 🚌 Cadastrar Veículo na Frota');
+    console.log('  2. 📋 Listar Frota');
+    console.log('  3. 🧑‍✈️ Cadastrar Motorista');
+    console.log('  4. 📋 Listar Motoristas');
+    console.log('  5. ✈️  Anunciar Nova Excursão');
+    console.log('  0. ⬅️  Voltar ao Menu Principal');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+    switch (opt.trim()) {
+      case '1':
+        await cadastrarVeiculoCLI();
+        break;
+      case '2':
+        await listarFrotaCLI();
+        break;
+      case '3':
+        await cadastrarMotoristaCLI();
+        break;
+      case '4':
+        await listarMotoristasCLI();
+        break;
+      case '5':
+        await anunciarExcursaoCLI();
+        break;
+      case '0':
+        return;
+      default:
+        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+        await question('');
+    }
+  }
+}
+
+async function cadastrarVeiculoCLI() {
+  printHeader('Cadastrar Veículo na Frota');
+  const placa = await question('Placa do ônibus (ex: ABC-1234): ');
+  const modelo = await question('Modelo / Carroceria: ');
+  const ano = await question('Ano do veículo: ');
+
+  try {
+    const res = await request('/empresa/frotas', 'POST', { placa, modelo, ano });
+    console.log(`\n${colors.fgGreen}✅ Veículo cadastrado com sucesso na frota!${colors.reset}`);
+    console.log(`Placa: ${res.placa} | Modelo: ${res.modelo} | Ano: ${res.ano}`);
+  } catch (err: any) {
+    console.log(`\n${colors.fgRed}❌ Erro no cadastro do veículo: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para continuar...');
+  await question('');
+}
+
+async function listarFrotaCLI() {
+  printHeader('Frota Cadastrada');
+  try {
+    const frota = await request('/empresa/frotas', 'GET');
+    if (frota.length === 0) {
+      console.log('Nenhum veículo cadastrado na sua frota.');
+    } else {
+      frota.forEach((v: any, index: number) => {
+        let statusStr = colors.fgGreen + 'ATIVO';
+        if (v.status === 'manutencao') statusStr = colors.fgYellow + 'MANUTENÇÃO';
+        console.log(`  ${index + 1}. [${v.placa}] ${v.modelo} (Ano: ${v.ano}) - Status: ${statusStr}${colors.reset}`);
+      });
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao listar frota: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function cadastrarMotoristaCLI() {
+  printHeader('Cadastrar Motorista');
+  const nome = await question('Nome do motorista: ');
+  const cnh = await question('CNH (apenas dígitos): ');
+
+  try {
+    const res = await request('/empresa/motoristas', 'POST', { nome, cnh });
+    console.log(`\n${colors.fgGreen}✅ Motorista cadastrado com sucesso!${colors.reset}`);
+    console.log(`Nome: ${res.nome} | CNH: ${res.cnh}`);
+  } catch (err: any) {
+    console.log(`\n${colors.fgRed}❌ Erro no cadastro do motorista: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para continuar...');
+  await question('');
+}
+
+async function listarMotoristasCLI() {
+  printHeader('Motoristas Cadastrados');
+  try {
+    const motoristas = await request('/empresa/motoristas', 'GET');
+    if (motoristas.length === 0) {
+      console.log('Nenhum motorista cadastrado.');
+    } else {
+      motoristas.forEach((m: any, index: number) => {
+        console.log(`  ${index + 1}. Nome: ${m.nome} | CNH: ${m.cnh} | Status: ${m.status === 'ativo' ? colors.fgGreen + 'ATIVO' : colors.fgRed + m.status}${colors.reset}`);
+      });
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao listar motoristas: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function anunciarExcursaoCLI() {
+  printHeader('Anunciar Nova Excursão');
+  const titulo = await question('Título da excursão: ');
+  const destino = await question('Destino (Cidade/Estado/País): ');
+  const preco = await question('Preço da passagem (R$): ');
+  const patrocinio_valor = await question('Valor de patrocínio para destacar no topo (R$, opcional): ');
+
+  try {
+    const res = await request('/empresa/excursoes', 'POST', {
+      titulo,
+      destino,
+      preco,
+      patrocinio_valor: patrocinio_valor || 0
+    });
+    console.log(`\n${colors.fgGreen}✅ Excursão anunciada com sucesso!${colors.reset}`);
+    console.log(`Título: ${res.titulo} | Destino: ${res.destino} | Preço: R$ ${Number(res.preco).toFixed(2)}`);
+    console.log(`Patrocínio: R$ ${Number(res.patrocinio_valor).toFixed(2)} (Prioridade no topo do feed)`);
+  } catch (err: any) {
+    console.log(`\n${colors.fgRed}❌ Erro ao anunciar: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para continuar...');
+  await question('');
+}
+
+async function verExcursoesDisponiveis() {
+  printHeader('Excursões e Viagens Disponíveis');
+  try {
+    const excursoes = await request('/excursoes', 'GET', null, false);
+    if (excursoes.length === 0) {
+      console.log('Nenhuma excursão anunciada por empresas parceiras no momento.');
+    } else {
+      console.log(`${colors.fgCyan}As excursões com patrocínio pago aparecem no topo com destaque:${colors.reset}\n`);
+      excursoes.forEach((e: any, index: number) => {
+        const isPatrocinado = Number(e.patrocinio_valor) > 0;
+        const tagPatrocinado = isPatrocinado ? `${colors.bgYellow}${colors.fgWhite} [DESTAQUE PREMIUM] ${colors.reset} ` : '';
+        console.log(`  ${index + 1}.${tagPatrocinado} ${colors.bright}${e.titulo}${colors.reset}`);
+        console.log(`     Destino:  ${e.destino}`);
+        console.log(`     Preço:    R$ ${Number(e.preco).toFixed(2)}`);
+        console.log(`     Patrocínio pago p/ OnBus: R$ ${Number(e.patrocinio_valor).toFixed(2)}\n`);
+      });
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao carregar excursões: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
 
 // ----------------------------------------------------
 // AÇÕES DO CLI
@@ -282,19 +536,23 @@ async function menuLogado() {
 async function registrarPassageiro() {
   printHeader('Cadastro de Passageiro');
   const nome = await question('Nome completo: ');
-  const cpf = await question('CPF (11 dígitos): ');
+  const cpf = await question('CPF/CNPJ (11 dígitos): ');
   const email = await question('E-mail: ');
   const senha = await question('Senha: ');
   
   console.log('\nTipo de conta:');
   console.log('  1. Passageiro (comum)');
   console.log('  2. Administrador');
+  console.log('  3. Empresa Parceira (B2B)');
   const tipoOpt = await question('Escolha o tipo: ');
-  const tipo = tipoOpt.trim() === '2' ? 'admin' : 'comum';
+  
+  let tipo = 'comum';
+  if (tipoOpt.trim() === '2') tipo = 'admin';
+  else if (tipoOpt.trim() === '3') tipo = 'empresa';
 
   try {
     const user = await request('/auth/register', 'POST', { nome, cpf, email, senha, tipo }, false);
-    console.log(`\n${colors.fgGreen}✅ Passageiro registrado com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}✅ Cadastro realizado com sucesso!${colors.reset}`);
     console.log(`ID: ${user.id}`);
     console.log(`Tipo: ${user.tipo}`);
   } catch (err: any) {
@@ -328,6 +586,12 @@ async function verPerfil() {
     console.log(` Nome:     ${user.nome}`);
     console.log(` CPF:      ${user.cpf}`);
     console.log(` E-mail:   ${user.email}`);
+    console.log(` Tipo:     ${user.tipo.toUpperCase()}`);
+    if (user.clube_status === 'ativo') {
+      console.log(` Clube:    ${colors.fgGreen}Premium (Ativo - Expira em ${new Date(user.clube_expira_em).toLocaleDateString()})${colors.reset}`);
+    } else {
+      console.log(` Clube:    ${colors.dim}Comum (Inativo)${colors.reset}`);
+    }
     console.log(` Status:   ${user.status === 'ativo' ? colors.fgGreen + 'Ativo' : colors.fgRed + user.status}${colors.reset}`);
     console.log(` Cadastro: ${new Date(user.created_at).toLocaleString()}`);
   } catch (err: any) {
@@ -744,7 +1008,7 @@ function desenharPainelValidador(
 }
 
 async function verHistorico() {
-  printHeader('Histórico do Cartão');
+  printHeader('Extrato & Histórico do Cartão');
   try {
     const cartoes = await request('/cartoes', 'GET');
     if (cartoes.length === 0) {
@@ -758,12 +1022,31 @@ async function verHistorico() {
     const selecionado = ativo || cartoes[cartoes.length - 1];
 
     const historico = await request(`/cartoes/${selecionado.id}/historico`, 'GET');
-    printHeader(`Histórico de Validações - Cartão ${selecionado.numero}`);
+    const transacoes = await request(`/cartoes/${selecionado.id}/transacoes`, 'GET');
+
+    printHeader(`Extrato - Cartão ${selecionado.numero}`);
     
-    if (historico.length === 0) {
-      console.log('Este cartão ainda não passou em nenhuma catraca.');
+    console.log(`${colors.fgCyan}--- RECARGAS REALIZADAS ---${colors.reset}`);
+    if (transacoes.length === 0) {
+      console.log('  Nenhuma transação financeira registrada.');
     } else {
-      console.log(`\nTotal de validações: ${historico.length}\n`);
+      transacoes.forEach((t: any) => {
+        const dataStr = new Date(t.created_at).toLocaleString();
+        let statusStr = colors.fgGreen + t.status.toUpperCase();
+        if (t.status === 'pendente') statusStr = colors.fgYellow + 'PENDENTE';
+        if (t.status === 'falho') statusStr = colors.fgRed + 'FALHO';
+
+        console.log(`  [${dataStr}] Recarga Pix: ${colors.bright}R$ ${Number(t.valor).toFixed(2)}${colors.reset} | Status: ${statusStr}${colors.reset}`);
+        if (t.taxa_servico && Number(t.taxa_servico) > 0) {
+          console.log(`         Taxa de Conveniência OnBus: R$ ${Number(t.taxa_servico).toFixed(2)}`);
+        }
+      });
+    }
+
+    console.log(`\n${colors.fgCyan}--- HISTÓRICO DE EMBARQUES ---${colors.reset}`);
+    if (historico.length === 0) {
+      console.log('  Este cartão ainda não passou em nenhuma catraca.');
+    } else {
       historico.forEach((v: any) => {
         const dataStr = new Date(v.created_at).toLocaleString();
         const statusStr = v.autorizado === 'sim' 
@@ -777,12 +1060,12 @@ async function verHistorico() {
           console.log(`         Dia: ${v.dia} Horário: ${v.horario}`);
         }
         if (v.mensagem) {
-          console.log(`         ${v.mensagem}`);
+          console.log(`         Status: ${v.mensagem}`);
         }
       });
     }
   } catch (err: any) {
-    console.log(`${colors.fgRed}Erro ao buscar histórico: ${err.message}${colors.reset}`);
+    console.log(`${colors.fgRed}Erro ao buscar extrato: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
