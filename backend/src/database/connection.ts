@@ -17,6 +17,7 @@ export interface Usuario {
   clube_expira_em?: string | null;
   cnh?: string | null;
   empresa_id?: string | null;
+  aprovacao_status?: string;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +102,16 @@ export interface Log {
   created_at?: string;
 }
 
+export interface Tarifa {
+  id: string;
+  tipo_cartao: 'comum' | 'estudante' | 'idoso';
+  valor: number;
+  descricao: string | null;
+  ativo: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Interface genérica de acesso a tabelas
@@ -171,4 +182,5 @@ export const db = {
   frotas: new KnexTableWrapper<Frota>(knexInstance, 'frotas'),
   excursoes: new KnexTableWrapper<Excursao>(knexInstance, 'excursoes'),
   logs: new KnexTableWrapper<Log>(knexInstance, 'logs'),
+  tarifas: new KnexTableWrapper<Tarifa>(knexInstance, 'tarifas'),
 };

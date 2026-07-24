@@ -7,6 +7,7 @@ export async function up(knex: Knex): Promise<void> {
     table.timestamp('clube_expira_em').nullable();
     table.string('cnh', 20).nullable().unique(); // CNH para motoristas
     table.string('empresa_id', 36).nullable().references('id').inTable('usuarios').onDelete('CASCADE'); // Empresa do motorista
+    table.string('aprovacao_status', 20).notNullable().defaultTo('aprovado'); // Para empresas: pendente/aprovado/rejeitado
   });
 
   // Alterar tabela transacoes para adicionar taxa de serviço
@@ -56,6 +57,7 @@ export async function down(knex: Knex): Promise<void> {
   });
 
   await knex.schema.alterTable('usuarios', (table) => {
+    table.dropColumn('aprovacao_status');
     table.dropColumn('empresa_id');
     table.dropColumn('cnh');
     table.dropColumn('clube_expira_em');

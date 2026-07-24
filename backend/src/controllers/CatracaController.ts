@@ -99,4 +99,144 @@ export class CatracaController {
       return res.status(400).json({ error: err.message });
     }
   }
+
+  static async listarUsuarios(req: any, res: Response): Promise<any> {
+    try {
+      const { tipo, status } = req.query;
+
+      let query: any = {};
+      if (tipo) query.tipo = tipo;
+      if (status) query.status = status;
+
+      const usuarios = await db.usuarios.find(query);
+      usuarios.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+      return res.status(200).json(usuarios);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async alterarStatusUsuario(req: any, res: Response): Promise<any> {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: 'O parâmetro id é obrigatório.' });
+      }
+
+      if (!status || !['ativo', 'inativo', 'bloqueado'].includes(status)) {
+        return res.status(400).json({ error: 'Status inválido. Use: ativo, inativo ou bloqueado.' });
+      }
+
+      const usuario = await db.usuarios.findOne({ id });
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuário não encontrado.' });
+      }
+
+      await db.usuarios.update({ id }, { status });
+
+      return res.status(200).json({ message: 'Status do usuário alterado com sucesso.', status });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async alterarTipoUsuario(req: any, res: Response): Promise<any> {
+    try {
+      const { id } = req.params;
+      const { tipo } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: 'O parâmetro id é obrigatório.' });
+      }
+
+      if (!tipo || !['comum', 'admin', 'empresa', 'motorista', 'admin_frota'].includes(tipo)) {
+        return res.status(400).json({ error: 'Tipo inválido. Use: comum, admin, empresa, motorista ou admin_frota.' });
+      }
+
+      const usuario = await db.usuarios.findOne({ id });
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuário não encontrado.' });
+      }
+
+      await db.usuarios.update({ id }, { tipo });
+
+      return res.status(200).json({ message: 'Tipo do usuário alterado com sucesso.', tipo });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async listarTarifas(req: any, res: Response): Promise<any> {
+    try {
+      const tarifas = await db.tarifas.find({});
+      return res.status(200).json(tarifas);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async atualizarTarifa(req: any, res: Response): Promise<any> {
+    try {
+      const { id } = req.params;
+      const { valor, descricao, ativo } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: 'O parâmetro id é obrigatório.' });
+      }
+
+      const tarifa = await db.tarifas.findOne({ id });
+      if (!tarifa) {
+        return res.status(404).json({ error: 'Tarifa não encontrada.' });
+      }
+
+      const updateData: any = { updated_at: new Date().toISOString() };
+      if (valor !== undefined) updateData.valor = valor;
+      if (descricao !== undefined) updateData.descricao = descricao;
+      if (ativo !== undefined) updateData.ativo = ativo;
+
+      await db.tarifas.update({ id }, updateData);
+
+      return res.status(200).json({ message: 'Tarifa atualizada com sucesso.' });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async listarEmpresasPendentes(req: any, res: Response): Promise<any> {
+    try {
+      const empresas = await db.usuarios.find({ tipo: 'empresa', aprovacao_status: 'pendente' });
+      return res.status(200).json(empresas);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async aprovarEmpresa(req: any, res: Response): Promise<any> {
+    try {
+      const { id } = req.params;
+      const { aprovacao_status } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: 'O parâmetro id é obrigatório.' });
+      }
+
+      if (!aprovacao_status || !['aprovado', 'rejeitado'].includes(aprovacao_status)) {
+        return res.status(400).json({ error: 'Status de aprovação inválido. Use: aprovado ou rejeitado.' });
+      }
+
+      const empresa = await db.usuarios.findOne({ id, tipo: 'empresa' });
+      if (!empresa) {
+        return res.status(404).json({ error: 'Empresa não encontrada.' });
+      }
+
+      await db.usuarios.update({ id }, { aprovacao_status });
+
+      return res.status(200).json({ message: `Empresa ${aprovacao_status} com sucesso.`, aprovacao_status });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
 }

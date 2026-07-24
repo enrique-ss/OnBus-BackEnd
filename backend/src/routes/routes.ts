@@ -64,6 +64,19 @@ router.get('/api/admin/transacoes', authMiddleware, adminMiddleware, CatracaCont
 router.get('/api/admin/logs', authMiddleware, adminMiddleware, LogsController.listarLogs);
 router.get('/api/admin/logs/estatisticas', authMiddleware, adminMiddleware, LogsController.obterEstatisticas);
 
+// Admin - Gestão de usuários
+router.get('/api/admin/usuarios', authMiddleware, adminMiddleware, CatracaController.listarUsuarios);
+router.put('/api/admin/usuarios/:id/status', authMiddleware, adminMiddleware, CatracaController.alterarStatusUsuario);
+router.put('/api/admin/usuarios/:id/tipo', authMiddleware, adminMiddleware, CatracaController.alterarTipoUsuario);
+
+// Admin - Gestão de tarifas
+router.get('/api/admin/tarifas', authMiddleware, adminMiddleware, CatracaController.listarTarifas);
+router.put('/api/admin/tarifas/:id', authMiddleware, adminMiddleware, CatracaController.atualizarTarifa);
+
+// Admin - Aprovação de empresas
+router.get('/api/admin/empresas/pendentes', authMiddleware, adminMiddleware, CatracaController.listarEmpresasPendentes);
+router.put('/api/admin/empresas/:id/aprovar', authMiddleware, adminMiddleware, CatracaController.aprovarEmpresa);
+
 // ----------------------------------------------------
 // ROTAS DE ITINERÁRIOS
 // ----------------------------------------------------

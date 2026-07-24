@@ -431,6 +431,201 @@ async function auditoriaLogs() {
   await question('');
 }
 
+async function gestaoUsuarios() {
+  while (true) {
+    printHeader('Gestão de Usuários');
+    console.log('  1. Listar Todos os Usuários');
+    console.log('  2. Listar por Tipo');
+    console.log('  3. Listar por Status');
+    console.log('  4. Alterar Status de Usuário');
+    console.log('  5. Alterar Tipo de Usuário');
+    console.log('  0. Voltar ao Menu Principal');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+
+    if (opt === '0') return;
+
+    try {
+      if (opt === '1') {
+        const usuarios = await request('/admin/usuarios', 'GET');
+        console.log(`\nTotal de usuários: ${usuarios.length}\n`);
+
+        usuarios.forEach((u: any) => {
+          const statusStr = u.status === 'ativo'
+            ? `${colors.fgGreen}ATIVO`
+            : u.status === 'inativo'
+            ? `${colors.fgYellow}INATIVO`
+            : `${colors.fgRed}BLOQUEADO`;
+
+          console.log(`  ID: ${u.id}`);
+          console.log(`  Nome: ${u.nome}`);
+          console.log(`  Email: ${u.email}`);
+          console.log(`  Tipo: ${u.tipo.toUpperCase()}`);
+          console.log(`  Status: ${statusStr}${colors.reset}`);
+          console.log(`  CPF: ${u.cpf}`);
+          console.log(`  Criado em: ${new Date(u.created_at).toLocaleString('pt-BR')}`);
+          console.log('');
+        });
+      } else if (opt === '2') {
+        console.log('Tipos: comum, admin, empresa, motorista, admin_frota');
+        const tipo = await question('Digite o tipo: ');
+        const usuarios = await request(`/admin/usuarios?tipo=${tipo}`, 'GET');
+
+        if (usuarios.length === 0) {
+          console.log('Nenhum usuário encontrado com este tipo.');
+        } else {
+          console.log(`\nUsuários do tipo ${tipo}: ${usuarios.length}\n`);
+          usuarios.forEach((u: any) => {
+            console.log(`  ${u.nome} (${u.email}) - ${u.status}`);
+          });
+        }
+      } else if (opt === '3') {
+        console.log('Status: ativo, inativo, bloqueado');
+        const status = await question('Digite o status: ');
+        const usuarios = await request(`/admin/usuarios?status=${status}`, 'GET');
+
+        if (usuarios.length === 0) {
+          console.log('Nenhum usuário encontrado com este status.');
+        } else {
+          console.log(`\nUsuários com status ${status}: ${usuarios.length}\n`);
+          usuarios.forEach((u: any) => {
+            console.log(`  ${u.nome} (${u.email}) - ${u.tipo}`);
+          });
+        }
+      } else if (opt === '4') {
+        const usuarioId = await question('Digite o ID do usuário: ');
+        console.log('Status disponíveis: ativo, inativo, bloqueado');
+        const novoStatus = await question('Digite o novo status: ');
+
+        await request(`/admin/usuarios/${usuarioId}/status`, 'PUT', { status: novoStatus });
+        console.log(`${colors.fgGreen}Status alterado com sucesso!${colors.reset}`);
+      } else if (opt === '5') {
+        const usuarioId = await question('Digite o ID do usuário: ');
+        console.log('Tipos disponíveis: comum, admin, empresa, motorista, admin_frota');
+        const novoTipo = await question('Digite o novo tipo: ');
+
+        await request(`/admin/usuarios/${usuarioId}/tipo`, 'PUT', { tipo: novoTipo });
+        console.log(`${colors.fgGreen}Tipo alterado com sucesso!${colors.reset}`);
+      } else {
+        console.log(`${colors.fgRed}Opção inválida!${colors.reset}`);
+      }
+    } catch (err: any) {
+      console.log(`${colors.fgRed}Erro: ${err.message}${colors.reset}`);
+    }
+
+    console.log('\nPressione Enter para continuar...');
+    await question('');
+  }
+}
+
+async function gestaoTarifas() {
+  while (true) {
+    printHeader('Gestão de Tarifas');
+    console.log('  1. Listar Todas as Tarifas');
+    console.log('  2. Atualizar Tarifa');
+    console.log('  0. Voltar ao Menu Principal');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+
+    if (opt === '0') return;
+
+    try {
+      if (opt === '1') {
+        const tarifas = await request('/admin/tarifas', 'GET');
+        console.log(`\nTotal de tarifas: ${tarifas.length}\n`);
+
+        tarifas.forEach((t: any) => {
+          const ativoStr = t.ativo
+            ? `${colors.fgGreen}ATIVO`
+            : `${colors.fgRed}INATIVO`;
+
+          console.log(`  ID: ${t.id}`);
+          console.log(`  Tipo de Cartão: ${t.tipo_cartao.toUpperCase()}`);
+          console.log(`  Valor: R$ ${Number(t.valor).toFixed(2)}`);
+          console.log(`  Descrição: ${t.descricao || 'Sem descrição'}`);
+          console.log(`  Status: ${ativoStr}${colors.reset}`);
+          console.log(`  Atualizado em: ${new Date(t.updated_at).toLocaleString('pt-BR')}`);
+          console.log('');
+        });
+      } else if (opt === '2') {
+        const tarifaId = await question('Digite o ID da tarifa: ');
+
+        const novoValor = await question('Novo valor (deixe em branco para manter): ');
+        const novaDescricao = await question('Nova descrição (deixe em branco para manter): ');
+        const ativoInput = await question('Ativo? (s/n, deixe em branco para manter): ');
+
+        const updateData: any = {};
+        if (novoValor.trim()) updateData.valor = parseFloat(novoValor);
+        if (novaDescricao.trim()) updateData.descricao = novaDescricao;
+        if (ativoInput.trim()) updateData.ativo = ativoInput.toLowerCase() === 's';
+
+        await request(`/admin/tarifas/${tarifaId}`, 'PUT', updateData);
+        console.log(`${colors.fgGreen}Tarifa atualizada com sucesso!${colors.reset}`);
+      } else {
+        console.log(`${colors.fgRed}Opção inválida!${colors.reset}`);
+      }
+    } catch (err: any) {
+      console.log(`${colors.fgRed}Erro: ${err.message}${colors.reset}`);
+    }
+
+    console.log('\nPressione Enter para continuar...');
+    await question('');
+  }
+}
+
+async function aprovacaoEmpresas() {
+  while (true) {
+    printHeader('Aprovação de Empresas');
+    console.log('  1. Listar Empresas Pendentes');
+    console.log('  2. Aprovar/Rejeitar Empresa');
+    console.log('  0. Voltar ao Menu Principal');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+
+    if (opt === '0') return;
+
+    try {
+      if (opt === '1') {
+        const empresas = await request('/admin/empresas/pendentes', 'GET');
+
+        if (empresas.length === 0) {
+          console.log('\nNenhuma empresa pendente de aprovação.');
+        } else {
+          console.log(`\nEmpresas pendentes: ${empresas.length}\n`);
+
+          empresas.forEach((e: any) => {
+            console.log(`  ID: ${e.id}`);
+            console.log(`  Nome: ${e.nome}`);
+            console.log(`  Email: ${e.email}`);
+            console.log(`  CPF/CNPJ: ${e.cpf}`);
+            console.log(`  Telefone: ${e.telefone}`);
+            console.log(`  Status: ${colors.fgYellow}PENDENTE${colors.reset}`);
+            console.log(`  Criado em: ${new Date(e.created_at).toLocaleString('pt-BR')}`);
+            console.log('');
+          });
+        }
+      } else if (opt === '2') {
+        const empresaId = await question('Digite o ID da empresa: ');
+        console.log('Ações: aprovado, rejeitado');
+        const acao = await question('Digite a ação: ');
+
+        await request(`/admin/empresas/${empresaId}/aprovar`, 'PUT', { aprovacao_status: acao });
+        console.log(`${colors.fgGreen}Empresa ${acao} com sucesso!${colors.reset}`);
+      } else {
+        console.log(`${colors.fgRed}Opção inválida!${colors.reset}`);
+      }
+    } catch (err: any) {
+      console.log(`${colors.fgRed}Erro: ${err.message}${colors.reset}`);
+    }
+
+    console.log('\nPressione Enter para continuar...');
+    await question('');
+  }
+}
+
 // ----------------------------------------------------
 // MENU PRINCIPAL (logado) — equivalente à tela Home
 // Espelha: Home → seções principais do app web
@@ -470,6 +665,9 @@ async function menuLogado() {
     console.log('  2. 🚌 Monitoramento de Catracas');
     console.log('  3. 📋 Auditoria de Transações Financeiras');
     console.log('  4. 📜 Auditoria de Logs do Sistema');
+    console.log('  5. 👥 Gestão de Usuários');
+    console.log('  6. 💰 Gestão de Tarifas');
+    console.log('  7. 🏢 Aprovação de Empresas');
     console.log('  0. 🚪 Sair');
     printFooter();
 
@@ -486,6 +684,15 @@ async function menuLogado() {
         break;
       case '4':
         await auditoriaLogs();
+        break;
+      case '5':
+        await gestaoUsuarios();
+        break;
+      case '6':
+        await gestaoTarifas();
+        break;
+      case '7':
+        await aprovacaoEmpresas();
         break;
       case '0':
         await realizarLogout();
