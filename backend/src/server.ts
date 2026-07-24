@@ -39,4 +39,10 @@ app.listen(PORT, () => {
   console.log(`🔗 API URL: http://localhost:${PORT}`);
   console.log(`🗄️  Banco: SQLite (backend/src/database/onbus.db)`);
   console.log(`==============================================`);
+  console.log(`📋 CREDENCIAIS PADRÕES PARA TESTE:`);
+  console.log(`   Passageiro: passageiro@teste.com / 123456`);
+  console.log(`   Admin: admin@teste.com / 123456`);
+  console.log(`   Empresa: empresa@teste.com / 123456`);
+  console.log(`   Motorista: motorista@teste.com / 123456`);
+  console.log(`==============================================`);
 });

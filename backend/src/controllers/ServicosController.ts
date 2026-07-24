@@ -1,9 +1,9 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { db, Frota, Motorista, Excursao } from '../database/connection';
+import { db, Frota, Excursao } from '../database/connection';
 import { randomUUID } from 'crypto';
 
-export class FuturoController {
+export class ServicosController {
   // ── Clube de Benefícios (Passageiro) ───────────────────────────────────────
   static async subscribeClube(req: AuthRequest, res: Response): Promise<any> {
     const userId = req.user?.id;
@@ -97,27 +97,35 @@ export class FuturoController {
       return res.status(403).json({ error: 'Acesso restrito: Apenas empresas podem gerenciar motoristas.' });
     }
 
-    const { nome, cnh } = req.body;
-    if (!nome || !cnh) {
-      return res.status(400).json({ error: 'Nome e CNH do motorista são obrigatórios.' });
+    const { nome, cnh, senha } = req.body;
+    if (!nome || !cnh || !senha) {
+      return res.status(400).json({ error: 'Nome, CNH e senha do motorista são obrigatórios.' });
     }
 
     try {
-      const existing = await db.motoristas.findOne({ cnh });
+      const existing = await db.usuarios.findOne({ cnh });
       if (existing) {
         return res.status(400).json({ error: 'Já existe um motorista com esta CNH cadastrada.' });
       }
 
-      const novoMotorista: Motorista = {
+      const bcrypt = require('bcryptjs');
+      const senhaHash = await bcrypt.hash(senha, 10);
+
+      const novoMotorista = {
         id: randomUUID(),
-        empresa_id: userId,
         nome,
-        cnh,
+        cpf: cnh, // Usando CNH como CPF temporariamente (pode ser ajustado)
+        email: `${nome.toLowerCase().replace(/\s/g, '.')}@motorista.onbus.com`,
+        senha: senhaHash,
+        tipo: 'motorista' as const,
         status: 'ativo',
-        created_at: new Date().toISOString()
+        cnh,
+        empresa_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
-      await db.motoristas.insert(novoMotorista);
+      await db.usuarios.insert(novoMotorista as any);
       return res.status(201).json(novoMotorista);
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -133,7 +141,7 @@ export class FuturoController {
     }
 
     try {
-      const motoristas = await db.motoristas.find({ empresa_id: userId });
+      const motoristas = await db.usuarios.find({ empresa_id: userId, tipo: 'motorista' });
       return res.status(200).json(motoristas);
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -182,6 +190,66 @@ export class FuturoController {
         .orderBy('created_at', 'desc');
 
       return res.status(200).json(excursoes);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── Funcionalidades do Motorista ─────────────────────────────────────────────
+  static async listarHorariosMotorista(req: AuthRequest, res: Response): Promise<any> {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Não autenticado.' });
+
+    try {
+      const motorista = await db.usuarios.findOne({ id: userId });
+      if (!motorista || motorista.tipo !== 'motorista') {
+        return res.status(403).json({ error: 'Acesso negado.' });
+      }
+
+      // Busca horários associados à empresa do motorista
+      const frotas = await db.frotas.find({ empresa_id: motorista.empresa_id || undefined });
+      const catracas = await db.catracas.find({ empresa_id: motorista.empresa_id || undefined });
+
+      // Simulação de horários baseados nas linhas da empresa
+      const horarios = catracas.map(catraca => ({
+        linha: catraca.nome,
+        linha_id: catraca.id,
+        horarios: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
+      }));
+
+      return res.status(200).json(horarios);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  static async listarTarefasMotorista(req: AuthRequest, res: Response): Promise<any> {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Não autenticado.' });
+
+    try {
+      const motorista = await db.usuarios.findOne({ id: userId });
+      if (!motorista || motorista.tipo !== 'motorista') {
+        return res.status(403).json({ error: 'Acesso negado.' });
+      }
+
+      // Busca tarefas associadas ao motorista
+      const frotas = await db.frotas.find({ empresa_id: motorista.empresa_id || undefined });
+      const catracas = await db.catracas.find({ empresa_id: motorista.empresa_id || undefined });
+
+      // Simulação de tarefas (viagens programadas)
+      const tarefas = catracas.map(catraca => ({
+        id: randomUUID(),
+        linha: catraca.nome,
+        linha_id: catraca.id,
+        horario_saida: '07:00',
+        horario_chegada: '08:30',
+        veiculo: frotas[0]?.placa || 'A definir',
+        status: 'pendente',
+        data: new Date().toISOString().split('T')[0]
+      }));
+
+      return res.status(200).json(tarefas);
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

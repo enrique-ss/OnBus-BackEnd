@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { adminMiddleware } from '../middleware/adminMiddleware';
+import { empresaMiddleware } from '../middleware/empresaMiddleware';
+import { passageiroMiddleware } from '../middleware/passageiroMiddleware';
+import { motoristaMiddleware } from '../middleware/motoristaMiddleware';
 import { AuthController } from '../controllers/AuthController';
 import { ProfileController } from '../controllers/ProfileController';
 import { CartaoController } from '../controllers/CartaoController';
 import { WebhookController } from '../controllers/WebhookController';
 import { CatracaController } from '../controllers/CatracaController';
 import { ItinerarioController } from '../controllers/ItinerarioController';
-import { FuturoController } from '../controllers/FuturoController';
+import { ServicosController } from '../controllers/ServicosController';
 
 const router = Router();
 
@@ -28,17 +31,18 @@ router.delete('/api/profile/lgpd', authMiddleware, ProfileController.deleteAccou
 
 // ----------------------------------------------------
 // ROTAS PRIVADAS - CARTÕES & FINANCEIRO (REQUER JWT)
+// Apenas passageiros podem gerenciar cartões
 // ----------------------------------------------------
 
-router.post('/api/cartoes', authMiddleware, CartaoController.emitir);
-router.get('/api/cartoes', authMiddleware, CartaoController.listar);
-router.post('/api/cartoes/:id/bloquear', authMiddleware, CartaoController.bloquear);
-router.post('/api/cartoes/:id/segunda-via', authMiddleware, CartaoController.solicitarSegundaVia);
-router.post('/api/cartoes/:id/recarregar', authMiddleware, CartaoController.recarregar);
-router.get('/api/cartoes/:id/transacoes', authMiddleware, CartaoController.listarTransacoes);
-router.get('/api/cartoes/:id/historico', authMiddleware, CartaoController.listarHistorico);
-router.get('/api/transacoes/pendentes', authMiddleware, CartaoController.listarPendentes);
-router.post('/api/transacoes/:id/pagar', authMiddleware, CartaoController.pagarPendente);
+router.post('/api/cartoes', authMiddleware, passageiroMiddleware, CartaoController.emitir);
+router.get('/api/cartoes', authMiddleware, passageiroMiddleware, CartaoController.listar);
+router.post('/api/cartoes/:id/bloquear', authMiddleware, passageiroMiddleware, CartaoController.bloquear);
+router.post('/api/cartoes/:id/segunda-via', authMiddleware, passageiroMiddleware, CartaoController.solicitarSegundaVia);
+router.post('/api/cartoes/:id/recarregar', authMiddleware, passageiroMiddleware, CartaoController.recarregar);
+router.get('/api/cartoes/:id/transacoes', authMiddleware, passageiroMiddleware, CartaoController.listarTransacoes);
+router.get('/api/cartoes/:id/historico', authMiddleware, passageiroMiddleware, CartaoController.listarHistorico);
+router.get('/api/transacoes/pendentes', authMiddleware, passageiroMiddleware, CartaoController.listarPendentes);
+router.post('/api/transacoes/:id/pagar', authMiddleware, passageiroMiddleware, CartaoController.pagarPendente);
 
 // Webhook do Gateway de Pagamento (Simulado)
 router.post('/api/webhooks/pagamentos', WebhookController.pagamentos);
@@ -62,20 +66,24 @@ router.get('/api/itinerarios', ItinerarioController.listarHorarios);
 router.get('/api/itinerarios/:id', ItinerarioController.getHorariosPorLinha);
 
 // ----------------------------------------------------
-// ROTAS DE FUNCIONALIDADES FUTURAS (ESCALABILIDADE)
+// ROTAS DE SERVIÇOS ADICIONAIS (Clube, B2B, Excursões)
 // ----------------------------------------------------
 
-// Clube de Benefícios (Passageiro)
-router.post('/api/profile/clube', authMiddleware, FuturoController.subscribeClube);
+// Clube de Benefícios (Passageiro) - Apenas passageiros
+router.post('/api/profile/clube', authMiddleware, passageiroMiddleware, ServicosController.subscribeClube);
 
-// Gestão B2B (Frotas e Motoristas)
-router.post('/api/empresa/frotas', authMiddleware, FuturoController.cadastrarFrota);
-router.get('/api/empresa/frotas', authMiddleware, FuturoController.listarFrota);
-router.post('/api/empresa/motoristas', authMiddleware, FuturoController.cadastrarMotorista);
-router.get('/api/empresa/motoristas', authMiddleware, FuturoController.listarMotoristas);
+// Gestão B2B (Frotas e Motoristas) - Apenas empresas
+router.post('/api/empresa/frotas', authMiddleware, empresaMiddleware, ServicosController.cadastrarFrota);
+router.get('/api/empresa/frotas', authMiddleware, empresaMiddleware, ServicosController.listarFrota);
+router.post('/api/empresa/motoristas', authMiddleware, empresaMiddleware, ServicosController.cadastrarMotorista);
+router.get('/api/empresa/motoristas', authMiddleware, empresaMiddleware, ServicosController.listarMotoristas);
 
-// Excursões (Divulgação B2B/B2C)
-router.post('/api/empresa/excursoes', authMiddleware, FuturoController.cadastrarExcursao);
-router.get('/api/excursoes', FuturoController.listarExcursoes);
+// Excursões (Divulgação B2B/B2C) - Apenas empresas podem anunciar
+router.post('/api/empresa/excursoes', authMiddleware, empresaMiddleware, ServicosController.cadastrarExcursao);
+router.get('/api/excursoes', ServicosController.listarExcursoes);
+
+// Motorista - Rotas específicas para motoristas (horários, tarefas)
+router.get('/api/motorista/horarios', authMiddleware, motoristaMiddleware, ServicosController.listarHorariosMotorista);
+router.get('/api/motorista/tarefas', authMiddleware, motoristaMiddleware, ServicosController.listarTarefasMotorista);
 
 export default router;

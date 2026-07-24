@@ -8,7 +8,7 @@ export interface AuthRequest extends Request {
     id: string;
     cpf: string;
     email: string;
-    tipo: 'comum' | 'admin' | 'empresa' | 'admin_frota';
+    tipo: 'comum' | 'admin' | 'empresa' | 'motorista' | 'admin_frota';
   };
 }
 
@@ -26,7 +26,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   const token = parts[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; cpf: string; email: string; tipo: 'comum' | 'admin' | 'empresa' | 'admin_frota' };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; cpf: string; email: string; tipo: 'comum' | 'admin' | 'empresa' | 'motorista' | 'admin_frota' };
     req.user = decoded;
     next();
   } catch (err) {

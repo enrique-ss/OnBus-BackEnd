@@ -1,10 +1,12 @@
 import { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
-  // Alterar tabela usuarios para adicionar campos do clube de benefícios
+  // Alterar tabela usuarios para adicionar campos do clube de benefícios e motorista
   await knex.schema.alterTable('usuarios', (table) => {
     table.string('clube_status', 20).notNullable().defaultTo('inativo');
     table.timestamp('clube_expira_em').nullable();
+    table.string('cnh', 20).nullable().unique(); // CNH para motoristas
+    table.string('empresa_id', 36).nullable().references('id').inTable('usuarios').onDelete('CASCADE'); // Empresa do motorista
   });
 
   // Alterar tabela transacoes para adicionar taxa de serviço
@@ -28,16 +30,6 @@ export async function up(knex: Knex): Promise<void> {
     table.timestamp('created_at').defaultTo(knex.fn.now());
   });
 
-  // Nova tabela de Motoristas
-  await knex.schema.createTable('motoristas', (table) => {
-    table.string('id', 36).primary();
-    table.string('empresa_id', 36).notNullable().references('id').inTable('usuarios').onDelete('CASCADE');
-    table.string('nome', 100).notNullable();
-    table.string('cnh', 20).notNullable().unique();
-    table.string('status', 20).notNullable().defaultTo('ativo'); // ativo/inativo
-    table.timestamp('created_at').defaultTo(knex.fn.now());
-  });
-
   // Nova tabela de Excursões (Divulgação/Monetização)
   await knex.schema.createTable('excursoes', (table) => {
     table.string('id', 36).primary();
@@ -53,7 +45,6 @@ export async function up(knex: Knex): Promise<void> {
 
 export async function down(knex: Knex): Promise<void> {
   await knex.schema.dropTableIfExists('excursoes');
-  await knex.schema.dropTableIfExists('motoristas');
   await knex.schema.dropTableIfExists('frotas');
 
   await knex.schema.alterTable('catracas', (table) => {
@@ -65,6 +56,8 @@ export async function down(knex: Knex): Promise<void> {
   });
 
   await knex.schema.alterTable('usuarios', (table) => {
+    table.dropColumn('empresa_id');
+    table.dropColumn('cnh');
     table.dropColumn('clube_expira_em');
     table.dropColumn('clube_status');
   });

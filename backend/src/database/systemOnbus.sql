@@ -9,12 +9,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
   cpf VARCHAR(11) NOT NULL UNIQUE, -- CPF/CNPJ (11 dígitos)
   email VARCHAR(100) NOT NULL UNIQUE, -- Email para login
   senha VARCHAR(255) NOT NULL, -- Senha hasheada
-  tipo VARCHAR(20) NOT NULL DEFAULT 'comum', -- comum/admin/empresa
+  tipo VARCHAR(20) NOT NULL DEFAULT 'comum', -- comum/admin/empresa/motorista
   status VARCHAR(20) NOT NULL DEFAULT 'ativo', -- ativo/inativo
   clube_status VARCHAR(20) NOT NULL DEFAULT 'inativo', -- ativo/inativo
   clube_expira_em TIMESTAMP NULL DEFAULT NULL, -- Expiração da assinatura premium
+  cnh VARCHAR(20) NULL DEFAULT NULL UNIQUE, -- CNH do motorista
+  empresa_id VARCHAR(36) NULL DEFAULT NULL, -- Empresa do motorista (FK para usuarios)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data de cadastro
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP -- Última atualização
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Última atualização
+  FOREIGN KEY (empresa_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS cartoes (
@@ -57,16 +60,6 @@ CREATE TABLE IF NOT EXISTS frotas (
   ano INT NOT NULL, -- Ano de fabricação
   status VARCHAR(20) NOT NULL DEFAULT 'ativo', -- ativo/manutencao
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data de cadastro
-  FOREIGN KEY (empresa_id) REFERENCES usuarios(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS motoristas (
-  id VARCHAR(36) PRIMARY KEY, -- UUID do motorista
-  empresa_id VARCHAR(36) NOT NULL, -- FK para usuarios (empresa contratante)
-  nome VARCHAR(100) NOT NULL, -- Nome completo
-  cnh VARCHAR(20) NOT NULL UNIQUE, -- Número da CNH
-  status VARCHAR(20) NOT NULL DEFAULT 'ativo', -- ativo/inativo
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data de contratação
   FOREIGN KEY (empresa_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 

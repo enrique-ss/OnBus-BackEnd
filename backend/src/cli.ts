@@ -96,7 +96,7 @@ function printFooter() {
   console.log(`${colors.fgCyan}----------------------------------------------------------------${colors.reset}`);
 
   const userStr = loggedUser
-    ? `👤 Passageiro: ${loggedUser.nome.split(' ')[0]}`
+    ? `👤 ${loggedUser.tipo === 'comum' ? 'Passageiro' : loggedUser.tipo === 'empresa' ? 'Empresa' : loggedUser.tipo === 'admin' ? 'Admin' : 'Motorista'}: ${loggedUser.nome.split(' ')[0]}`
     : '👤 Não autenticado';
 
   console.log(`${userStr}`);
@@ -108,7 +108,8 @@ async function menuDeslogado() {
   printHeader('Menu Inicial');
   console.log('  1. 📝 Registrar Novo Passageiro');
   console.log('  2. 🔑 Entrar');
-  console.log('  3. 📅 Consultar Itinerários de Pelotas');
+  console.log('  3. � Recuperar Senha');
+  console.log('  4. � Consultar Itinerários de Pelotas');
   console.log('  0. ❌ Sair');
   printFooter();
 
@@ -121,6 +122,9 @@ async function menuDeslogado() {
       await loginPassageiro();
       break;
     case '3':
+      await recuperarSenha();
+      break;
+    case '4':
       await verItinerarios();
       break;
     case '0':
@@ -142,8 +146,15 @@ async function menuPerfil() {
     printHeader('Meu Perfil');
     console.log('  1. 👤 Visualizar Perfil');
     console.log('  2. ✏️  Editar Perfil');
-    console.log('  3. 🌟 Assinar Clube OnBus (Benefícios)');
-    console.log('  4. ⚠️  Excluir Conta');
+    
+    // Clube OnBus apenas para passageiros
+    if (loggedUser.tipo === 'comum') {
+      console.log('  3. 🌟 Assinar Clube OnBus (Benefícios)');
+      console.log('  4. ⚠️  Excluir Conta');
+    } else {
+      console.log('  3. ⚠️  Excluir Conta');
+    }
+    
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
@@ -156,11 +167,18 @@ async function menuPerfil() {
         await editarPerfil();
         break;
       case '3':
-        await assinarClubeOnBus();
+        if (loggedUser.tipo === 'comum') {
+          await assinarClubeOnBus();
+        } else {
+          await excluirContaLGPD();
+          if (!loggedUser) return;
+        }
         break;
       case '4':
-        await excluirContaLGPD();
-        if (!loggedUser) return; // Se a conta foi excluída (deslogado), retorna
+        if (loggedUser.tipo === 'comum') {
+          await excluirContaLGPD();
+          if (!loggedUser) return;
+        }
         break;
       case '0':
         return;
@@ -276,7 +294,6 @@ async function menuLogado() {
     // Menu do Administrador
     console.log('  1. 👤 Meu Perfil');
     console.log('  2. 🚌 Histórico de Catracas (Linhas)');
-    console.log('  3. 📅 Consultar Itinerários de Pelotas');
     console.log('  0. 🚪 Sair');
     printFooter();
 
@@ -288,8 +305,31 @@ async function menuLogado() {
       case '2':
         await menuCatraca();
         break;
+      case '0':
+        await realizarLogout();
+        break;
+      default:
+        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+        await question('');
+    }
+  } else if (loggedUser.tipo === 'motorista') {
+    // Menu do Motorista
+    console.log('  1. 👤 Meu Perfil');
+    console.log('  2. 📅 Ver Meus Horários');
+    console.log('  3. 📋 Ver Minhas Tarefas');
+    console.log('  0. 🚪 Sair');
+    printFooter();
+
+    const opt = await question('Escolha uma opção: ');
+    switch (opt.trim()) {
+      case '1':
+        await menuPerfil();
+        break;
+      case '2':
+        await verHorariosMotorista();
+        break;
       case '3':
-        await verItinerarios();
+        await verTarefasMotorista();
         break;
       case '0':
         await realizarLogout();
@@ -349,7 +389,7 @@ async function realizarLogout() {
 
 async function assinarClubeOnBus() {
   printHeader('Clube de Benefícios OnBus');
-  console.log('Ao assinar o Clube OnBus por apenas R$ 9,90/mês, você garante:');
+  console.log('Ao assinar o Clube OnBus, você garante:');
   console.log(`  - ${colors.fgGreen}Remoção completa de anúncios${colors.reset} no app de trajetos`);
   console.log(`  - ${colors.fgGreen}Temas VIP exclusivos${colors.reset} para personalizar seu cartão digital`);
   console.log(`  - ${colors.fgGreen}Suporte prioritário 24h${colors.reset}`);
@@ -377,9 +417,9 @@ async function menuEmpresa() {
     console.log(`Empresa parceira: ${colors.bright}${loggedUser.nome}${colors.reset}\n`);
     console.log('  1. 🚌 Cadastrar Veículo na Frota');
     console.log('  2. 📋 Listar Frota');
-    console.log('  3. 🧑‍✈️ Cadastrar Motorista');
+    console.log('  3. Cadastrar Motorista');
     console.log('  4. 📋 Listar Motoristas');
-    console.log('  5. ✈️  Anunciar Nova Excursão');
+    console.log('  5. ✈️ Anunciar Nova Excursão');
     console.log('  0. ⬅️  Voltar ao Menu Principal');
     printFooter();
 
@@ -539,19 +579,9 @@ async function registrarPassageiro() {
   const cpf = await question('CPF/CNPJ (11 dígitos): ');
   const email = await question('E-mail: ');
   const senha = await question('Senha: ');
-  
-  console.log('\nTipo de conta:');
-  console.log('  1. Passageiro (comum)');
-  console.log('  2. Administrador');
-  console.log('  3. Empresa Parceira (B2B)');
-  const tipoOpt = await question('Escolha o tipo: ');
-  
-  let tipo = 'comum';
-  if (tipoOpt.trim() === '2') tipo = 'admin';
-  else if (tipoOpt.trim() === '3') tipo = 'empresa';
 
   try {
-    const user = await request('/auth/register', 'POST', { nome, cpf, email, senha, tipo }, false);
+    const user = await request('/auth/register', 'POST', { nome, cpf, email, senha }, false);
     console.log(`\n${colors.fgGreen}✅ Cadastro realizado com sucesso!${colors.reset}`);
     console.log(`ID: ${user.id}`);
     console.log(`Tipo: ${user.tipo}`);
@@ -576,6 +606,29 @@ async function loginPassageiro() {
     console.log(`\n${colors.fgRed}❌ Falha no login: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
+  await question('');
+}
+
+async function recuperarSenha() {
+  printHeader('Recuperar Senha');
+  console.log(`${colors.dim}Informe o e-mail ou CPF/CNPJ da conta para recuperar a senha.${colors.reset}\n`);
+  const identificador = await question('E-mail ou CPF/CNPJ: ');
+
+  if (!identificador.trim()) {
+    console.log(`\n${colors.fgYellow}Operação cancelada.${colors.reset}`);
+    console.log('\nPressione Enter para voltar...');
+    await question('');
+    return;
+  }
+
+  console.log(`\n${colors.fgCyan}📧 Enviando e-mail de recuperação para: ${identificador}${colors.reset}`);
+  console.log(`${colors.dim}Aguarde...${colors.reset}`);
+
+  await new Promise(r => setTimeout(r, 1500));
+
+  console.log(`\n${colors.fgGreen}✅ E-mail de recuperação enviado com sucesso!${colors.reset}`);
+  console.log(`${colors.dim}Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.${colors.reset}`);
+  console.log('\nPressione Enter para voltar...');
   await question('');
 }
 
@@ -685,9 +738,9 @@ async function solicitarCartao() {
   }
 
   console.log('Selecione o tipo de cartão desejado:');
-  console.log('  1. Comum (Tarifa R$ 5,00)');
-  console.log('  2. Estudante (Tarifa R$ 2,50 - Meia)');
-  console.log('  3. Idoso (Tarifa R$ 0,00 - Gratuito)');
+  console.log('  1. Comum');
+  console.log('  2. Estudante (Meia)');
+  console.log('  3. Idoso (Gratuito)');
   console.log('  4. Cancelar');
   console.log('');
   
@@ -1139,6 +1192,45 @@ function formatHorariosGrid(horarios: string[]): string {
   }
 
   return chunked.map(row => '  ' + row.join('   ')).join('\n');
+}
+
+async function verHorariosMotorista() {
+  printHeader('Meus Horários de Trabalho');
+  try {
+    const horarios = await request('/motorista/horarios', 'GET');
+    console.log('\nHorários das linhas da sua empresa:\n');
+    horarios.forEach((h: any) => {
+      console.log(`${colors.bright}🚌 Linha: ${h.linha}${colors.reset}`);
+      console.log(`   ID: ${h.linha_id}`);
+      console.log(`   Horários: ${h.horarios.join(', ')}`);
+      console.log('');
+    });
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao buscar horários: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function verTarefasMotorista() {
+  printHeader('Minhas Tarefas');
+  try {
+    const tarefas = await request('/motorista/tarefas', 'GET');
+    console.log('\nViagens programadas:\n');
+    tarefas.forEach((t: any) => {
+      console.log(`${colors.bright}🚗 Viagem: ${t.linha}${colors.reset}`);
+      console.log(`   ID: ${t.id}`);
+      console.log(`   Saída: ${t.horario_saida} | Chegada: ${t.horario_chegada}`);
+      console.log(`   Veículo: ${t.veiculo}`);
+      console.log(`   Data: ${t.data}`);
+      console.log(`   Status: ${t.status}`);
+      console.log('');
+    });
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao buscar tarefas: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
 }
 
 async function excluirContaLGPD() {

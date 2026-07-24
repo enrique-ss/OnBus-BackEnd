@@ -1,19 +1,18 @@
 # Funcionalidades do Sistema OnBus
 
-Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
+Documentação completa das funcionalidades do backend e CLI do sistema OnBus, organizadas por tipo de usuário.
 
 ## 📋 Índice
 
-- [Autenticação](#autenticação)
-- [Gestão de Usuários](#gestão-de-usuários)
-- [Gestão de Cartões](#gestão-de-cartões)
-- [Recargas via Pix](#recargas-via-pix)
-- [Validação de Embarque](#validação-de-embarque)
-- [Histórico de Transações](#histórico-de-transações)
-- [Validadores](#validadores)
-- [Itinerários](#itinerários)
-- [Webhooks](#webhooks)
-- [LGPD](#lgpd)
+- [Funcionalidades do Passageiro](#funcionalidades-do-passageiro)
+- [Funcionalidades do Administrador](#funcionalidades-do-administrador)
+- [Funcionalidades da Empresa Parceira](#funcionalidades-da-empresa-parceira)
+- [Funcionalidades do Motorista](#funcionalidades-do-motorista)
+- [Funcionalidades Comuns](#funcionalidades-comuns)
+- [CLI de Testes](#cli-de-testes)
+- [Segurança](#segurança)
+- [Banco de Dados](#banco-de-dados)
+- [API Endpoints](#api-endpoints)
 
 ---
 
@@ -21,7 +20,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Registro de Usuário
 
-**Endpoint:** `POST /usuarios/registrar`
+**Endpoint:** `POST /api/auth/register`
 
 **Corpo da requisição:**
 ```json
@@ -35,8 +34,10 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 ```
 
 **Tipos de usuário:**
-- `comum`: Usuário padrão (padrão)
+- `comum`: Passageiro padrão
 - `admin`: Administrador com acesso a histórico de catracas
+- `empresa`: Empresa parceira B2B
+- `motorista`: Motorista vinculado à empresa
 
 **Validações:**
 - CPF deve ter 11 dígitos numéricos
@@ -59,7 +60,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Login
 
-**Endpoint:** `POST /usuarios/login`
+**Endpoint:** `POST /api/auth/login`
 
 **Corpo da requisição:**
 ```json
@@ -93,7 +94,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Ver Perfil
 
-**Endpoint:** `GET /usuarios/perfil` (requer autenticação)
+**Endpoint:** `GET /api/profile` (requer autenticação)
 
 **Resposta:**
 ```json
@@ -110,7 +111,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Excluir Conta (LGPD)
 
-**Endpoint:** `DELETE /usuarios/conta` (requer autenticação)
+**Endpoint:** `DELETE /api/profile/lgpd` (requer autenticação)
 
 **Processo:**
 1. Verifica se usuário está autenticado
@@ -126,13 +127,42 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 }
 ```
 
+### Editar Perfil
+
+**Endpoint:** `PUT /api/profile` (requer autenticação)
+
+**Corpo da requisição:**
+```json
+{
+  "nome": "João Silva Atualizado",
+  "email": "joao.novo@email.com"
+}
+```
+
+**Validações:**
+- Campos são opcionais (apenas os enviados são atualizados)
+- Email deve ser único no sistema (se alterado)
+
+**Resposta:**
+```json
+{
+  "id": "uuid-v4",
+  "nome": "João Silva Atualizado",
+  "cpf": "12345678901",
+  "email": "joao.novo@email.com",
+  "tipo": "comum",
+  "status": "ativo",
+  "updated_at": "2024-01-01T00:00:00.000Z"
+}
+```
+
 ---
 
 ## Gestão de Cartões
 
 ### Solicitar Cartão
 
-**Endpoint:** `POST /cartoes` (requer autenticação)
+**Endpoint:** `POST /api/cartoes` (requer autenticação)
 
 **Corpo da requisição:**
 ```json
@@ -173,7 +203,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Listar Cartões
 
-**Endpoint:** `GET /cartoes` (requer autenticação)
+**Endpoint:** `GET /api/cartoes` (requer autenticação)
 
 **Resposta:**
 ```json
@@ -191,7 +221,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Bloquear Cartão
 
-**Endpoint:** `POST /cartoes/bloquear` (requer autenticação)
+**Endpoint:** `POST /api/cartoes/:id/bloquear` (requer autenticação)
 
 **Corpo da requisição:**
 ```json
@@ -221,7 +251,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Solicitar Segunda Via
 
-**Endpoint:** `POST /cartoes/segunda-via` (requer autenticação)
+**Endpoint:** `POST /api/cartoes/:id/segunda-via` (requer autenticação)
 
 **Corpo da requisição:**
 ```json
@@ -258,7 +288,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Solicitar Recarga
 
-**Endpoint:** `POST /cartoes/recarregar` (requer autenticação)
+**Endpoint:** `POST /api/cartoes/:id/recarregar` (requer autenticação)
 
 **Corpo da requisição:**
 ```json
@@ -296,7 +326,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Listar Recargas Pendentes
 
-**Endpoint:** `GET /transacoes/pendentes` (requer autenticação)
+**Endpoint:** `GET /api/transacoes/pendentes` (requer autenticação)
 
 **Resposta:**
 ```json
@@ -320,7 +350,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Pagar Recarga Pendente
 
-**Endpoint:** `POST /transacoes/:id/pagar` (requer autenticação)
+**Endpoint:** `POST /api/transacoes/:id/pagar` (requer autenticação)
 
 **Validações:**
 - Transação deve existir
@@ -346,7 +376,7 @@ Documentação completa das funcionalidades do backend e CLI do sistema OnBus.
 
 ### Confirmar Recarga (Webhook)
 
-**Endpoint:** `POST /webhook/pix` (requer assinatura HMAC)
+**Endpoint:** `POST /api/webhooks/pagamentos` (requer assinatura HMAC)
 
 **Corpo da requisição:**
 ```json
@@ -461,7 +491,7 @@ Ao acessar a opção de recarga no CLI:
 
 ### Histórico do Cartão
 
-**Endpoint:** `GET /cartoes/:id/historico` (requer autenticação)
+**Endpoint:** `GET /api/cartoes/:id/historico` (requer autenticação)
 
 **Resposta:**
 ```json
@@ -486,7 +516,7 @@ Ao acessar a opção de recarga no CLI:
 
 ### Histórico de Recargas
 
-**Endpoint:** `GET /cartoes/:id/transacoes` (requer autenticação)
+**Endpoint:** `GET /api/cartoes/:id/transacoes` (requer autenticação)
 
 **Resposta:**
 ```json
@@ -628,7 +658,7 @@ Ao acessar a opção de recarga no CLI:
 
 ### Consultar Itinerários de Pelotas/RS
 
-**Endpoint:** `GET /itinerarios`
+**Endpoint:** `GET /api/itinerarios`
 
 **Resposta:**
 ```json
@@ -665,7 +695,7 @@ X-Webhook-Signature: <signature>
 
 ### Webhook de Pix
 
-**Endpoint:** `POST /webhook/pix`
+**Endpoint:** `POST /api/webhooks/pagamentos`
 
 **Validações:**
 - Assinatura deve ser válida
@@ -706,17 +736,60 @@ A CLI permite testar todos os fluxos do sistema sem dependência do frontend:
 | # | Função | Descrição |
 |---|--------|-----------|
 | 1 | Ver perfil | Exibe dados do usuário autenticado |
-| 2 | Solicitar cartão | Emite novo cartão (Comum/Estudante/Idoso) |
-| 3 | Listar cartões | Mostra todos os cartões e saldos |
-| 4 | Recarregar via Pix | Verifica pendentes, gera código Pix ou paga pendentes |
-| 5 | Bloquear cartão | Bloqueia cartão ativo |
-| 6 | Solicitar segunda via | Emite novo cartão com saldo transferido |
-| 7 | Simular catraca | Seleciona destino e simula aproximação do cartão |
-| 8 | Ver histórico do cartão | Mostra histórico de validações do cartão |
-| 9 | Ver histórico da catraca | Seleciona catraca e mostra validações (apenas admin) |
-| 9 | Consultar itinerários | Lista linhas de ônibus de Pelotas |
-| 10 | Simular webhook | Simula confirmação de Pix |
-| 11 | Excluir conta | Exclui conta conforme LGPD |
+| 2 | Editar perfil | Atualiza nome e email do usuário |
+| 3 | Solicitar cartão | Emite novo cartão (Comum/Estudante/Idoso) |
+| 4 | Listar cartões | Mostra todos os cartões e saldos |
+| 5 | Recarregar via Pix | Verifica pendentes, gera código Pix ou paga pendentes |
+| 6 | Bloquear cartão | Bloqueia cartão ativo |
+| 7 | Solicitar segunda via | Emite novo cartão com saldo transferido |
+| 8 | Simular catraca | Seleciona destino e simula aproximação do cartão |
+| 9 | Ver histórico do cartão | Mostra histórico de validações do cartão |
+| 10 | Ver histórico da catraca | Seleciona catraca e mostra validações (apenas admin) |
+| 11 | Consultar itinerários | Lista linhas de ônibus de Pelotas |
+| 12 | Simular webhook | Simula confirmação de Pix |
+| 13 | Excluir conta | Exclui conta conforme LGPD |
+| 14 | Recuperar senha | Simula envio de email de recuperação (menu inicial) |
+
+### Menus por Tipo de Usuário
+
+**Menu Inicial (Deslogado):**
+- Registrar novo passageiro
+- Entrar
+- Recuperar senha
+- Consultar itinerários
+- Sair
+
+**Menu Passageiro Comum:**
+- Meu Perfil
+- Gerenciar Cartões
+- Simular Embarque (Catraca)
+- Consultar Itinerários de Pelotas
+- Excursões e Viagens Disponíveis
+- Sair
+
+**Menu Administrador:**
+- Meu Perfil
+- Histórico de Catracas (Linhas)
+- Sair
+
+**Menu Empresa Parceira:**
+- Meu Perfil
+- Painel de Controle da Empresa
+- Sair
+
+**Painel de Controle da Empresa:**
+- Cadastrar Veículo na Frota
+- Listar Frota
+- Cadastrar Motorista
+- Listar Motoristas
+- Anunciar Nova Excursão
+- Voltar ao Menu Principal
+
+**Menu Motorista:**
+- Meu Perfil
+- Ver Meus Horários
+- Ver Minhas Tarefas
+- Sair
 
 ### Execução
 
@@ -762,8 +835,12 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 - cpf (VARCHAR 11, UNIQUE)
 - email (VARCHAR 100, UNIQUE)
 - senha (VARCHAR 255)
-- tipo (VARCHAR 20) - comum/admin
+- tipo (VARCHAR 20) - comum/admin/empresa/motorista
 - status (VARCHAR 20)
+- clube_status (VARCHAR 20) - inativo/ativo
+- clube_expira_em (TIMESTAMP, NULLABLE)
+- cnh (VARCHAR 20, NULLABLE, UNIQUE) - CNH do motorista
+- empresa_id (VARCHAR 36, FK, NULLABLE) - Empresa do motorista
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
 
@@ -784,6 +861,7 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 - cartao_id (VARCHAR 36, FK)
 - tipo (VARCHAR 20) - apenas 'recarga'
 - valor (DECIMAL 8,2)
+- taxa_servico (DECIMAL 8,2) - Taxa de conveniência (padrão 0.00)
 - status (VARCHAR 20)
 - created_at (TIMESTAMP)
 
@@ -791,51 +869,102 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 - id (VARCHAR 50) - ID da linha (ex: COHAB, FRAGATA, LARANJAL, AEROPORTO)
 - nome (VARCHAR 100) - Nome da linha (ex: "Cohab / Tablada (Laranjal)")
 - status (VARCHAR 20)
-- historico (TEXT) - JSON com histórico de validações (cartões que tocou)
+- empresa_id (VARCHAR 36, FK, NULLABLE) - Empresa parceira vinculada (B2B)
+
+**historicos:**
+- id (VARCHAR 36)
+- cartao_id (VARCHAR 36, FK)
+- catraca_id (VARCHAR 50, FK)
+- cartao_numero (VARCHAR 20) - Número do cartão (para consulta rápida)
+- catraca_nome (VARCHAR 100) - Nome da linha (para consulta rápida)
+- tarifa (DECIMAL 8,2)
+- autorizado (VARCHAR 10) - sim/nao
+- mensagem (VARCHAR 255, NULLABLE)
+- dia (VARCHAR 20) - Dia da semana
+- horario (VARCHAR 5) - Horário HH:MM
+- created_at (TIMESTAMP)
+
+**frotas:**
+- id (VARCHAR 36)
+- empresa_id (VARCHAR 36, FK)
+- placa (VARCHAR 10, UNIQUE)
+- modelo (VARCHAR 100)
+- ano (INT)
+- status (VARCHAR 20) - ativo/manutencao
+- created_at (TIMESTAMP)
+
+**excursoes:**
+- id (VARCHAR 36)
+- empresa_id (VARCHAR 36, FK)
+- titulo (VARCHAR 100)
+- destino (VARCHAR 100)
+- preco (DECIMAL 8,2)
+- patrocinio_valor (DECIMAL 8,2) - Valor pago para destacar anúncio
+- status (VARCHAR 20) - ativo/cancelado/finalizado
+- created_at (TIMESTAMP)
 
 ### Relacionamentos
 
 - cartoes.usuario_id → usuarios.id (CASCADE)
 - transacoes.cartao_id → cartoes.id (CASCADE)
+- historicos.cartao_id → cartoes.id (CASCADE)
+- historicos.catraca_id → catracas.id (CASCADE)
+- catracas.empresa_id → usuarios.id (CASCADE)
+- frotas.empresa_id → usuarios.id (CASCADE)
+- excursoes.empresa_id → usuarios.id (CASCADE)
+- usuarios.empresa_id → usuarios.id (CASCADE) - Motoristas vinculados a empresas
 
 ---
 
 ## API Endpoints
 
 ### Autenticação
-- `POST /usuarios/registrar` - Registrar usuário
-- `POST /usuarios/login` - Login
+- `POST /api/auth/register` - Registrar usuário
+- `POST /api/auth/login` - Login
 
 ### Usuários
-- `GET /usuarios/perfil` - Ver perfil (auth)
-- `DELETE /usuarios/conta` - Excluir conta (auth)
+- `GET /api/profile` - Ver perfil (auth)
+- `PUT /api/profile` - Editar perfil (auth)
+- `DELETE /api/profile/lgpd` - Excluir conta (auth)
 
 ### Cartões
-- `POST /cartoes` - Solicitar cartão (auth)
-- `GET /cartoes` - Listar cartões (auth)
-- `POST /cartoes/bloquear` - Bloquear cartão (auth)
-- `POST /cartoes/segunda-via` - Solicitar segunda via (auth)
-- `POST /cartoes/recarregar` - Recarregar via Pix (auth)
-- `GET /cartoes/:id/transacoes` - Listar recargas do cartão (auth)
-- `GET /cartoes/:id/historico` - Listar histórico de validações do cartão (auth)
+- `POST /api/cartoes` - Solicitar cartão (auth + passageiro)
+- `GET /api/cartoes` - Listar cartões (auth + passageiro)
+- `POST /api/cartoes/:id/bloquear` - Bloquear cartão (auth + passageiro)
+- `POST /api/cartoes/:id/segunda-via` - Solicitar segunda via (auth + passageiro)
+- `POST /api/cartoes/:id/recarregar` - Recarregar via Pix (auth + passageiro)
+- `GET /api/cartoes/:id/transacoes` - Listar recargas do cartão (auth + passageiro)
+- `GET /api/cartoes/:id/historico` - Listar histórico de validações do cartão (auth + passageiro)
 
 ### Transações
-- `GET /transacoes/pendentes` - Listar recargas pendentes (auth)
-- `POST /transacoes/:id/pagar` - Pagar recarga pendente (auth)
+- `GET /api/transacoes/pendentes` - Listar recargas pendentes (auth + passageiro)
+- `POST /api/transacoes/:id/pagar` - Pagar recarga pendente (auth + passageiro)
 
 ### Catracas
 - `GET /api/catracas` - Listar todas as catracas (linhas)
 - `GET /api/catracas/:id` - Obter catraca específica
-- `GET /api/catracas/:id/validacoes` - Listar histórico de validações da catraca (apenas admin)
+- `GET /api/catracas/:id/validacoes` - Listar histórico de validações da catraca (auth + admin)
 - `GET /api/catracas/tarifas` - Obter tarifas
 - `POST /api/catraca/embarque` - Processar embarque
 - `POST /api/catraca/sincronizar` - Sincronizar offline
 
 ### Itinerários
-- `GET /itinerarios` - Consultar itinerários
+- `GET /api/itinerarios` - Consultar itinerários
+- `GET /api/itinerarios/:id` - Obter horários por linha
+
+### Serviços Adicionais
+- `POST /api/profile/clube` - Assinar clube de benefícios (auth + passageiro)
+- `POST /api/empresa/frotas` - Cadastrar veículo na frota (auth + empresa)
+- `GET /api/empresa/frotas` - Listar frota da empresa (auth + empresa)
+- `POST /api/empresa/motoristas` - Cadastrar motorista (auth + empresa)
+- `GET /api/empresa/motoristas` - Listar motoristas da empresa (auth + empresa)
+- `POST /api/empresa/excursoes` - Anunciar excursão (auth + empresa)
+- `GET /api/excursoes` - Listar excursões disponíveis
+- `GET /api/motorista/horarios` - Ver horários de trabalho (auth + motorista)
+- `GET /api/motorista/tarefas` - Ver tarefas/viagens (auth + motorista)
 
 ### Webhooks
-- `POST /webhook/pix` - Confirmar Pix
+- `POST /api/webhooks/pagamentos` - Confirmar Pix
 
 ---
 
@@ -856,4 +985,16 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 
 ### 💵 Taxa de Conveniência
 - O backend calcula automaticamente uma taxa de 2% sobre o valor solicitado nas recargas via Pix, persistida na coluna `taxa_servico` da tabela `transacoes`.
+
+### 🚌 Motorista (Funcionalidades do Trabalhador)
+- `GET /api/motorista/horarios` - Ver horários de trabalho das linhas da empresa (auth + motorista)
+- `GET /api/motorista/tarefas` - Ver tarefas/viagens programadas (auth + motorista)
+
+**Horários de Trabalho:**
+- Busca linhas associadas à empresa do motorista
+- Retorna horários de cada linha disponível
+
+**Tarefas:**
+- Lista viagens programadas associadas à empresa do motorista
+- Mostra horários, veículos e status de cada tarefa
 
