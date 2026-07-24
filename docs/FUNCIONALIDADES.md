@@ -769,7 +769,17 @@ A CLI permite testar todos os fluxos do sistema sem dependência do frontend:
 
 **Menu Administrador:**
 - Meu Perfil
-- Histórico de Catracas (Linhas)
+- Monitoramento de Catracas
+  - Monitorar Status das Catracas (ativo/inativo, empresas vinculadas)
+  - Ver Histórico da Catraca (validações completas)
+- Auditoria de Transações Financeiras
+  - Listar todas as transações do sistema
+  - Ver resumo financeiro (total, taxas, líquido)
+  - Dados enriquecidos com usuário e cartão
+- Auditoria de Logs do Sistema
+  - Ver estatísticas (total, por nível, por origem)
+  - Listar logs recentes com filtros
+  - Dados enriquecidos com usuário e rota
 - Sair
 
 **Menu Empresa Parceira:**
@@ -903,6 +913,19 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 - status (VARCHAR 20) - ativo/cancelado/finalizado
 - created_at (TIMESTAMP)
 
+**logs:**
+- id (VARCHAR 36)
+- nivel (VARCHAR 20) - info/warning/error/critical
+- origem (VARCHAR 100) - auth/catraca/pagamento/etc
+- mensagem (VARCHAR 500)
+- dados (JSON, NULLABLE) - Dados adicionais
+- usuario_id (VARCHAR 36, FK, NULLABLE)
+- ip (VARCHAR 50, NULLABLE)
+- metodo (VARCHAR 10, NULLABLE) - GET/POST/PUT/DELETE
+- rota (VARCHAR 255, NULLABLE)
+- status_code (INT, NULLABLE)
+- created_at (TIMESTAMP)
+
 ### Relacionamentos
 
 - cartoes.usuario_id → usuarios.id (CASCADE)
@@ -913,6 +936,7 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 - frotas.empresa_id → usuarios.id (CASCADE)
 - excursoes.empresa_id → usuarios.id (CASCADE)
 - usuarios.empresa_id → usuarios.id (CASCADE) - Motoristas vinculados a empresas
+- logs.usuario_id → usuarios.id (SET NULL)
 
 ---
 
@@ -962,6 +986,11 @@ O CLI seleciona catracas dinamicamente do banco. Não há necessidade de configu
 - `GET /api/excursoes` - Listar excursões disponíveis
 - `GET /api/motorista/horarios` - Ver horários de trabalho (auth + motorista)
 - `GET /api/motorista/tarefas` - Ver tarefas/viagens (auth + motorista)
+
+### Admin - Auditoria e Monitoramento
+- `GET /api/admin/transacoes` - Listar todas as transações com dados enriquecidos (auth + admin)
+- `GET /api/admin/logs` - Listar logs do sistema com filtros (auth + admin)
+- `GET /api/admin/logs/estatisticas` - Obter estatísticas de logs (auth + admin)
 
 ### Webhooks
 - `POST /api/webhooks/pagamentos` - Confirmar Pix

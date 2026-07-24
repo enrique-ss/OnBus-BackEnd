@@ -11,6 +11,7 @@ import { WebhookController } from '../controllers/WebhookController';
 import { CatracaController } from '../controllers/CatracaController';
 import { ItinerarioController } from '../controllers/ItinerarioController';
 import { ServicosController } from '../controllers/ServicosController';
+import { LogsController } from '../controllers/LogsController';
 
 const router = Router();
 
@@ -57,6 +58,11 @@ router.get('/api/catracas', CatracaController.listar);
 router.get('/api/catracas/:id', CatracaController.obterCatraca);
 router.get('/api/catracas/:id/validacoes', authMiddleware, adminMiddleware, CatracaController.listarValidacoes);
 router.get('/api/catracas/tarifas', CatracaController.obterTarifas);
+
+// Admin - Auditoria e monitoramento
+router.get('/api/admin/transacoes', authMiddleware, adminMiddleware, CatracaController.listarTodasTransacoes);
+router.get('/api/admin/logs', authMiddleware, adminMiddleware, LogsController.listarLogs);
+router.get('/api/admin/logs/estatisticas', authMiddleware, adminMiddleware, LogsController.obterEstatisticas);
 
 // ----------------------------------------------------
 // ROTAS DE ITINERÁRIOS

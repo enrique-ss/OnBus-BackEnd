@@ -87,6 +87,21 @@ export interface Excursao {
 }
 
 
+export interface Log {
+  id: string;
+  nivel: 'info' | 'warning' | 'error' | 'critical';
+  origem: string;
+  mensagem: string;
+  dados: any;
+  usuario_id: string | null;
+  ip: string | null;
+  metodo: string | null;
+  rota: string | null;
+  status_code: number | null;
+  created_at?: string;
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Interface genérica de acesso a tabelas
 // Todos os services usam essa abstração — não dependem de Knex diretamente.
@@ -155,4 +170,5 @@ export const db = {
   historicos: new KnexTableWrapper<Historico>(knexInstance, 'historicos'),
   frotas: new KnexTableWrapper<Frota>(knexInstance, 'frotas'),
   excursoes: new KnexTableWrapper<Excursao>(knexInstance, 'excursoes'),
+  logs: new KnexTableWrapper<Log>(knexInstance, 'logs'),
 };

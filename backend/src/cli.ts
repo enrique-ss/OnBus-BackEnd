@@ -235,26 +235,200 @@ async function menuCartoes() {
 async function menuCatraca() {
   while (true) {
     printHeader('Catraca');
-    console.log('  1. 🚌 Simular Embarque');
-    console.log('  2. 📋 Ver Histórico da Catraca');
-    console.log('  0. ⬅️  Voltar ao Menu Principal');
-    printFooter();
 
-    const opt = await question('Escolha uma opção: ');
-    switch (opt.trim()) {
-      case '1':
-        await simularCatraca();
-        break;
-      case '2':
-        await verHistoricoCatraca();
-        break;
-      case '0':
-        return;
-      default:
-        console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
-        await question('');
+    // Admin vê histórico e status, passageiro vê ambas opções
+    if (loggedUser.tipo === 'admin') {
+      console.log('  1. 📊 Monitorar Status das Catracas');
+      console.log('  2. 📋 Ver Histórico da Catraca');
+      console.log('  0. ⬅️  Voltar ao Menu Principal');
+      printFooter();
+
+      const opt = await question('Escolha uma opção: ');
+      switch (opt.trim()) {
+        case '1':
+          await monitorarStatusCatracas();
+          break;
+        case '2':
+          await verHistoricoCatraca();
+          break;
+        case '0':
+          return;
+        default:
+          console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+          await question('');
+      }
+    } else {
+      console.log('  1. 🚌 Simular Embarque');
+      console.log('  2. 📋 Ver Histórico da Catraca');
+      console.log('  0. ⬅️  Voltar ao Menu Principal');
+      printFooter();
+
+      const opt = await question('Escolha uma opção: ');
+      switch (opt.trim()) {
+        case '1':
+          await simularCatraca();
+          break;
+        case '2':
+          await verHistoricoCatraca();
+          break;
+        case '0':
+          return;
+        default:
+          console.log(`${colors.fgRed}Opção inválida! Pressione Enter para continuar...${colors.reset}`);
+          await question('');
+      }
     }
   }
+}
+
+async function auditoriaTransacoes() {
+  printHeader('Auditoria de Transações Financeiras');
+  try {
+    const transacoes = await request('/admin/transacoes', 'GET');
+
+    if (transacoes.length === 0) {
+      console.log('Nenhuma transação registrada no sistema.');
+    } else {
+      console.log(`\nTotal de transações: ${transacoes.length}\n`);
+
+      let totalValor = 0;
+      let totalTaxa = 0;
+
+      transacoes.forEach((t: any) => {
+        const dataStr = new Date(t.created_at).toLocaleString('pt-BR');
+        const statusStr = t.status === 'confirmado'
+          ? `${colors.fgGreen}CONFIRMADO`
+          : t.status === 'pendente'
+          ? `${colors.fgYellow}PENDENTE`
+          : `${colors.fgRed}${t.status.toUpperCase()}`;
+
+        console.log(`  [${dataStr}] ${statusStr}${colors.reset}`);
+        console.log(`     Cartão: ${t.cartao_numero}`);
+        console.log(`     Usuário: ${t.usuario_nome} (${t.usuario_email})`);
+        console.log(`     Valor: R$ ${Number(t.valor).toFixed(2)}`);
+        if (t.taxa_servico && Number(t.taxa_servico) > 0) {
+          console.log(`     Taxa de serviço: R$ ${Number(t.taxa_servico).toFixed(2)}`);
+          totalTaxa += Number(t.taxa_servico);
+        }
+        console.log(`     ID: ${t.id}`);
+        console.log('');
+
+        if (t.status === 'confirmado') {
+          totalValor += Number(t.valor);
+        }
+      });
+
+      console.log(`${colors.bright}RESUMO FINANCEIRO:${colors.reset}`);
+      console.log(`  Total confirmado: R$ ${totalValor.toFixed(2)}`);
+      console.log(`  Total taxas: R$ ${totalTaxa.toFixed(2)}`);
+      console.log(`  Líquido: R$ ${(totalValor - totalTaxa).toFixed(2)}`);
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao buscar transações: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function monitorarStatusCatracas() {
+  printHeader('Monitoramento de Status das Catracas');
+  try {
+    const catracas = await request('/catracas', 'GET');
+
+    if (catracas.length === 0) {
+      console.log('Nenhuma catraca cadastrada no sistema.');
+    } else {
+      console.log(`\nTotal de catracas: ${catracas.length}\n`);
+
+      let ativas = 0;
+      let inativas = 0;
+
+      catracas.forEach((c: any) => {
+        const statusStr = c.status === 'ativo'
+          ? `${colors.fgGreen}ATIVO`
+          : `${colors.fgRed}${c.status.toUpperCase()}`;
+
+        console.log(`  ID: ${c.id}`);
+        console.log(`  Nome: ${c.nome}`);
+        console.log(`  Status: ${statusStr}${colors.reset}`);
+        if (c.empresa_id) {
+          console.log(`  Empresa ID: ${c.empresa_id}`);
+        }
+        console.log('');
+
+        if (c.status === 'ativo') ativas++;
+        else inativas++;
+      });
+
+      console.log(`${colors.bright}RESUMO:${colors.reset}`);
+      console.log(`  Ativas: ${ativas}`);
+      console.log(`  Inativas: ${inativas}`);
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao buscar catracas: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
+}
+
+async function auditoriaLogs() {
+  printHeader('Auditoria de Logs do Sistema');
+  try {
+    console.log('Escolha uma opção:');
+    console.log('  1. Ver Estatísticas');
+    console.log('  2. Listar Logs Recentes');
+    console.log('  0. Voltar');
+
+    const opt = await question('Escolha: ');
+
+    if (opt === '1') {
+      const stats = await request('/admin/logs/estatisticas', 'GET');
+      console.log(`\n${colors.bright}ESTATÍSTICAS DO SISTEMA:${colors.reset}`);
+      console.log(`  Total de logs: ${stats.total}`);
+      console.log(`\n  Por Nível:`);
+      console.log(`    Info: ${stats.por_nivel.info}`);
+      console.log(`    Warning: ${stats.por_nivel.warning}`);
+      console.log(`    Error: ${stats.por_nivel.error}`);
+      console.log(`    Critical: ${stats.por_nivel.critical}`);
+      console.log(`\n  Por Origem:`);
+      Object.entries(stats.por_origem).forEach(([origem, count]) => {
+        console.log(`    ${origem}: ${count}`);
+      });
+    } else if (opt === '2') {
+      const logs = await request('/admin/logs?limit=50', 'GET');
+
+      if (logs.length === 0) {
+        console.log('Nenhum log registrado no sistema.');
+      } else {
+        console.log(`\nÚltimos ${logs.length} logs:\n`);
+
+        logs.forEach((log: any) => {
+          const dataStr = new Date(log.created_at).toLocaleString('pt-BR');
+          const nivelStr = log.nivel === 'info'
+            ? `${colors.fgBlue}INFO`
+            : log.nivel === 'warning'
+            ? `${colors.fgYellow}WARNING`
+            : log.nivel === 'error'
+            ? `${colors.fgRed}ERROR`
+            : `${colors.fgMagenta}CRITICAL`;
+
+          console.log(`[${dataStr}] ${nivelStr}${colors.reset} [${log.origem}]`);
+          console.log(`  ${log.mensagem}`);
+          if (log.usuario_nome) {
+            console.log(`  Usuário: ${log.usuario_nome}`);
+          }
+          if (log.rota) {
+            console.log(`  Rota: ${log.metodo} ${log.rota} (${log.status_code})`);
+          }
+          console.log('');
+        });
+      }
+    }
+  } catch (err: any) {
+    console.log(`${colors.fgRed}Erro ao buscar logs: ${err.message}${colors.reset}`);
+  }
+  console.log('\nPressione Enter para voltar...');
+  await question('');
 }
 
 // ----------------------------------------------------
@@ -293,7 +467,9 @@ async function menuLogado() {
   } else if (loggedUser.tipo === 'admin') {
     // Menu do Administrador
     console.log('  1. 👤 Meu Perfil');
-    console.log('  2. 🚌 Histórico de Catracas (Linhas)');
+    console.log('  2. 🚌 Monitoramento de Catracas');
+    console.log('  3. 📋 Auditoria de Transações Financeiras');
+    console.log('  4. 📜 Auditoria de Logs do Sistema');
     console.log('  0. 🚪 Sair');
     printFooter();
 
@@ -304,6 +480,12 @@ async function menuLogado() {
         break;
       case '2':
         await menuCatraca();
+        break;
+      case '3':
+        await auditoriaTransacoes();
+        break;
+      case '4':
+        await auditoriaLogs();
         break;
       case '0':
         await realizarLogout();

@@ -77,4 +77,26 @@ export class CatracaController {
       return res.status(400).json({ error: err.message });
     }
   }
+
+  static async listarTodasTransacoes(req: any, res: Response): Promise<any> {
+    try {
+      const transacoes = await db.transacoes.find({});
+      transacoes.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+      const enriched = await Promise.all(transacoes.map(async (t: any) => {
+        const cartao = await db.cartoes.findOne({ id: t.cartao_id });
+        const usuario = cartao ? await db.usuarios.findOne({ id: cartao.usuario_id }) : null;
+        return {
+          ...t,
+          cartao_numero: cartao?.numero || 'N/A',
+          usuario_nome: usuario?.nome || 'N/A',
+          usuario_email: usuario?.email || 'N/A'
+        };
+      }));
+
+      return res.status(200).json(enriched);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
 }
