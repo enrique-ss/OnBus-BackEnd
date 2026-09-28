@@ -1,7 +1,8 @@
 import { db, Usuario } from '../database/connection';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes, createHash } from 'crypto';
+import { EmailService } from './EmailService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'onbus_super_secret_key_12345';
 
@@ -39,8 +40,63 @@ function validarEmail(email: string): boolean {
 }
 
 export class UsuarioService {
+  private static hashToken(token: string): string { return createHash('sha256').update(token).digest('hex'); }
+
+  static async solicitarRecuperacao(email: string): Promise<void> {
+    const user = await db.usuarios.findOne({ email: String(email || '').trim().toLowerCase() });
+    // Same response for known and unknown addresses prevents account enumeration.
+    if (!user || user.status !== 'ativo') return;
+    const token = randomBytes(32).toString('hex');
+    const now = new Date();
+    await db.knex('auth_tokens').where({ usuario_id: user.id, tipo: 'password_reset' }).whereNull('usado_em').update({ usado_em: now.toISOString() });
+    await db.knex('auth_tokens').insert({ id: randomUUID(), usuario_id: user.id, tipo: 'password_reset', token_hash: this.hashToken(token), expira_em: new Date(now.getTime() + 30 * 60_000).toISOString(), usado_em: null, created_at: now.toISOString() });
+    const baseUrl = process.env.APP_URL;
+    if (!baseUrl) throw new Error('APP_URL não configurada para gerar link de recuperação.');
+    await EmailService.send(user.email, 'Recuperação de senha OnBus', `Acesse ${baseUrl.replace(/\/$/, '')}/reset-password?token=${token} para redefinir sua senha. O link expira em 30 minutos.`);
+  }
+
+  static async redefinirSenha(token: string, senha: string): Promise<void> {
+    if (!token || !senha || senha.length < 8) throw new Error('Token e senha com pelo menos 8 caracteres são obrigatórios.');
+    const row = await db.knex('auth_tokens').where({ tipo: 'password_reset', token_hash: this.hashToken(token) }).whereNull('usado_em').where('expira_em', '>', new Date().toISOString()).first();
+    if (!row) throw new Error('Token inválido ou expirado.');
+    await db.knex.transaction(async (trx) => {
+      await trx('usuarios').where({ id: row.usuario_id }).update({ senha: await bcrypt.hash(senha, 12), updated_at: new Date().toISOString() });
+      await trx('auth_tokens').where({ id: row.id }).whereNull('usado_em').update({ usado_em: new Date().toISOString() });
+      await trx('auth_tokens').where({ usuario_id: row.usuario_id, tipo: 'login_2fa' }).whereNull('usado_em').update({ usado_em: new Date().toISOString() });
+    });
+  }
+
+  static async solicitarCodigoLogin(email: string, senha: string): Promise<void> {
+    const user = await db.usuarios.findOne({ email: String(email || '').trim().toLowerCase() });
+    if (!user || user.status !== 'ativo' || !(await bcrypt.compare(senha || '', user.senha))) throw new Error('E-mail ou senha incorretos.');
+    if (!user.two_factor_enabled) throw new Error('Autenticação de dois fatores não está ativada.');
+    const code = randomBytes(4).readUInt32BE(0).toString().slice(0, 6).padStart(6, '0');
+    const now = new Date();
+    await db.knex('auth_tokens').where({ usuario_id: user.id, tipo: 'login_2fa' }).whereNull('usado_em').update({ usado_em: now.toISOString() });
+    await db.knex('auth_tokens').insert({ id: randomUUID(), usuario_id: user.id, tipo: 'login_2fa', token_hash: this.hashToken(code), expira_em: new Date(now.getTime() + 10 * 60_000).toISOString(), usado_em: null, created_at: now.toISOString() });
+    await EmailService.send(user.email, 'Código de acesso OnBus', `Seu código de acesso é ${code}. Ele expira em 10 minutos.`);
+  }
+
+  static async verificarCodigoLogin(email: string, codigo: string): Promise<{ token: string; user: Omit<Usuario, 'senha'> }> {
+    const user = await db.usuarios.findOne({ email: String(email || '').trim().toLowerCase() });
+    if (!user || !user.two_factor_enabled) throw new Error('Código inválido ou expirado.');
+    const row = await db.knex('auth_tokens').where({ usuario_id: user.id, tipo: 'login_2fa', token_hash: this.hashToken(codigo || '') }).whereNull('usado_em').where('expira_em', '>', new Date().toISOString()).first();
+    if (!row) throw new Error('Código inválido ou expirado.');
+    await db.knex('auth_tokens').where({ id: row.id }).whereNull('usado_em').update({ usado_em: new Date().toISOString() });
+    return this.issueLogin(user);
+  }
+
+  static async configurarDoisFatores(id: string, ativo: boolean): Promise<void> {
+    await db.usuarios.update({ id }, { two_factor_enabled: ativo, updated_at: new Date().toISOString() } as any);
+  }
+
+  private static issueLogin(user: Usuario): { token: string; user: Omit<Usuario, 'senha'> } {
+    const token = jwt.sign({ id: user.id, cpf: user.cpf, email: user.email, tipo: user.tipo }, JWT_SECRET, { expiresIn: '24h' });
+    const { senha: _, ...userWithoutPassword } = user;
+    return { token, user: userWithoutPassword };
+  }
   static async register(data: any): Promise<Omit<Usuario, 'senha'>> {
-    const { nome, cpf, email, senha, tipo } = data;
+    const { nome, cpf, email, senha } = data;
 
     if (!nome || !cpf || !email || !senha) {
       throw new Error('Preencha todos os campos obrigatórios (nome, cpf, email, senha).');
@@ -72,7 +128,8 @@ export class UsuarioService {
       cpf: cleanCpf,
       email: cleanEmail,
       senha: hashedPassword,
-      tipo: tipo || 'comum',
+      // Public self-registration must never grant privileged roles.
+      tipo: 'comum',
       status: 'ativo',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -84,14 +141,14 @@ export class UsuarioService {
     return userWithoutPassword;
   }
 
-  static async login(data: any): Promise<{ token: string; user: Omit<Usuario, 'senha'> }> {
+  static async login(data: any): Promise<{ token?: string; user?: Omit<Usuario, 'senha'>; requiresTwoFactor?: boolean }> {
     const { email, senha } = data;
 
     if (!email || !senha) {
       throw new Error('E-mail e senha são obrigatórios.');
     }
 
-    const user = await db.usuarios.findOne({ email });
+    const user = await db.usuarios.findOne({ email: String(email).trim().toLowerCase() });
     if (!user) {
       throw new Error('E-mail ou senha incorretos.');
     }
@@ -105,12 +162,11 @@ export class UsuarioService {
       throw new Error('E-mail ou senha incorretos.');
     }
 
-    const token = jwt.sign({ id: user.id, cpf: user.cpf, email: user.email, tipo: user.tipo }, JWT_SECRET, {
-      expiresIn: '24h',
-    });
-
-    const { senha: _, ...userWithoutPassword } = user;
-    return { token, user: userWithoutPassword };
+    if (user.two_factor_enabled) {
+      await this.solicitarCodigoLogin(email, senha);
+      return { requiresTwoFactor: true };
+    }
+    return this.issueLogin(user);
   }
 
   static async getProfile(id: string): Promise<Omit<Usuario, 'senha'> | null> {

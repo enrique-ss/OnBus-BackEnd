@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { CartaoService } from '../services/CartaoService';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { db } from '../database/connection';
+import { TravelService } from '../services/TravelService';
 
 export class CartaoController {
   static async emitir(req: AuthRequest, res: Response): Promise<any> {
@@ -98,7 +99,11 @@ export class CartaoController {
 
   static async processarWebhookPagamento(req: any, res: Response): Promise<any> {
     try {
-      const { transaction_id, amount } = req.body;
+      const payload = req.body.data || req.body;
+      const transaction_id = payload.transaction_id || payload.reference;
+      const amount = payload.amount;
+      const ticket = await TravelService.processarPagamento(transaction_id, Number(amount));
+      if (ticket) return res.status(200).json({ status: 'success', message: 'Passagem confirmada.', data: ticket });
       const transacaoConfirmada = await CartaoService.processarWebhookPagamento(transaction_id, Number(amount));
       return res.status(200).json({ status: 'success', message: 'Pagamento processado.', data: transacaoConfirmada });
     } catch (err: any) {

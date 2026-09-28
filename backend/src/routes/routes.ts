@@ -12,6 +12,9 @@ import { CatracaController } from '../controllers/CatracaController';
 import { ItinerarioController } from '../controllers/ItinerarioController';
 import { ServicosController } from '../controllers/ServicosController';
 import { LogsController } from '../controllers/LogsController';
+import { RecargaProgramadaController } from '../controllers/RecargaProgramadaController';
+import { EngagementController } from '../controllers/EngagementController';
+import { TravelController } from '../controllers/TravelController';
 
 const router = Router();
 
@@ -21,6 +24,13 @@ const router = Router();
 
 router.post('/api/auth/register', AuthController.register);
 router.post('/api/auth/login', AuthController.login);
+router.post('/api/auth/forgot-password', AuthController.forgotPassword);
+router.post('/api/auth/reset-password', AuthController.resetPassword);
+router.post('/api/auth/verify-email-code', AuthController.verifyLoginCode);
+router.put('/api/auth/two-factor', authMiddleware, AuthController.setTwoFactor);
+router.post('/api/suporte/chatbot', EngagementController.faq);
+router.get('/api/termos', EngagementController.terms);
+router.get('/api/viagens', TravelController.search);
 
 // ----------------------------------------------------
 // ROTAS PRIVADAS - PERFIL (REQUER JWT)
@@ -43,7 +53,18 @@ router.post('/api/cartoes/:id/recarregar', authMiddleware, passageiroMiddleware,
 router.get('/api/cartoes/:id/transacoes', authMiddleware, passageiroMiddleware, CartaoController.listarTransacoes);
 router.get('/api/cartoes/:id/historico', authMiddleware, passageiroMiddleware, CartaoController.listarHistorico);
 router.get('/api/transacoes/pendentes', authMiddleware, passageiroMiddleware, CartaoController.listarPendentes);
-router.post('/api/transacoes/:id/pagar', authMiddleware, passageiroMiddleware, CartaoController.pagarPendente);
+router.post('/api/recargas-programadas', authMiddleware, passageiroMiddleware, RecargaProgramadaController.criar);
+router.get('/api/recargas-programadas', authMiddleware, passageiroMiddleware, RecargaProgramadaController.listar);
+router.delete('/api/recargas-programadas/:id', authMiddleware, passageiroMiddleware, RecargaProgramadaController.cancelar);
+router.get('/api/profile/cashback', authMiddleware, passageiroMiddleware, EngagementController.cashback);
+router.get('/api/profile/termos', authMiddleware, EngagementController.termsStatus);
+router.post('/api/profile/termos/aceite', authMiddleware, EngagementController.acceptTerms);
+router.post('/api/avaliacoes/ultimo-embarque', authMiddleware, passageiroMiddleware, EngagementController.reviewLastRide);
+router.post('/api/passagens', authMiddleware, passageiroMiddleware, TravelController.reserve);
+router.get('/api/passagens/minhas', authMiddleware, passageiroMiddleware, TravelController.mine);
+router.post('/api/admin/viagens', authMiddleware, adminMiddleware, TravelController.publish);
+router.put('/api/admin/catracas/:id/associacao', authMiddleware, adminMiddleware, EngagementController.setDriver);
+// Confirmação de pagamento ocorre exclusivamente pelo webhook assinado do provedor.
 
 // Webhook do Gateway de Pagamento (Simulado)
 router.post('/api/webhooks/pagamentos', WebhookController.pagamentos);

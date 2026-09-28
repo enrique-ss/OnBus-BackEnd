@@ -12,6 +12,8 @@ export interface Usuario {
   email: string;
   senha: string;
   tipo: 'comum' | 'admin' | 'empresa' | 'motorista' | 'admin_frota';
+  two_factor_enabled?: boolean;
+  cashback_pontos?: number;
   status: string;
   clube_status?: string;
   clube_expira_em?: string | null;
@@ -49,12 +51,16 @@ export interface Catraca {
   nome: string;
   status: string;
   empresa_id?: string | null;
+  motorista_id?: string | null;
+  onibus_id?: string | null;
 }
 
 export interface Historico {
   id: string;
   cartao_id: string;
   catraca_id: string;
+  motorista_id?: string | null;
+  onibus_id?: string | null;
   cartao_numero: string;
   catraca_nome: string;
   tarifa: number;

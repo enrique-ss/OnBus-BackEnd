@@ -96,8 +96,8 @@ function printFooter() {
   console.log(`${colors.fgCyan}----------------------------------------------------------------${colors.reset}`);
 
   const userStr = loggedUser
-    ? `👤 ${loggedUser.tipo === 'comum' ? 'Passageiro' : loggedUser.tipo === 'empresa' ? 'Empresa' : loggedUser.tipo === 'admin' ? 'Admin' : 'Motorista'}: ${loggedUser.nome.split(' ')[0]}`
-    : '👤 Não autenticado';
+    ? `${loggedUser.tipo === 'comum' ? 'Passageiro' : loggedUser.tipo === 'empresa' ? 'Empresa' : loggedUser.tipo === 'admin' ? 'Admin' : 'Motorista'}: ${loggedUser.nome.split(' ')[0]}`
+    : 'Nao autenticado';
 
   console.log(`${userStr}`);
   console.log(`${colors.bright}${colors.fgCyan}================================================================${colors.reset}\n`);
@@ -106,11 +106,11 @@ function printFooter() {
 // Menu principal deslogado
 async function menuDeslogado() {
   printHeader('Menu Inicial');
-  console.log('  1. 📝 Registrar Novo Passageiro');
-  console.log('  2. 🔑 Entrar');
-  console.log('  3. � Recuperar Senha');
-  console.log('  4. � Consultar Itinerários de Pelotas');
-  console.log('  0. ❌ Sair');
+  console.log('  1. Registrar Novo Passageiro');
+  console.log('  2. Entrar');
+  console.log('  3. Recuperar Senha');
+  console.log('  4. Consultar Itinerários de Pelotas');
+  console.log('  0. Sair');
   printFooter();
 
   const opt = await question('Escolha uma opção: ');
@@ -144,18 +144,18 @@ async function menuDeslogado() {
 async function menuPerfil() {
   while (true) {
     printHeader('Meu Perfil');
-    console.log('  1. 👤 Visualizar Perfil');
-    console.log('  2. ✏️  Editar Perfil');
-    
+    console.log('  1. Visualizar Perfil');
+    console.log('  2. Editar Perfil');
+
     // Clube OnBus apenas para passageiros
     if (loggedUser.tipo === 'comum') {
-      console.log('  3. 🌟 Assinar Clube OnBus (Benefícios)');
-      console.log('  4. ⚠️  Excluir Conta');
+      console.log('  3. Assinar Clube OnBus (Benefícios)');
+      console.log('  4. Excluir Conta');
     } else {
-      console.log('  3. ⚠️  Excluir Conta');
+      console.log('  3. Excluir Conta');
     }
-    
-    console.log('  0. ⬅️  Voltar ao Menu Principal');
+
+    console.log('  0. Voltar ao Menu Principal');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -192,13 +192,13 @@ async function menuPerfil() {
 async function menuCartoes() {
   while (true) {
     printHeader('Gerenciar Cartões');
-    console.log('  1. 📋 Visualizar Meu Cartão');
-    console.log('  2. ➕ Solicitar Novo Cartão');
-    console.log('  3. 💵 Recarregar Cartão');
-    console.log('  4. 🔒 Bloquear Cartão');
-    console.log('  5. 🔄 Solicitar Segunda Via');
-    console.log('  6. 📊 Ver Extrato');
-    console.log('  0. ⬅️  Voltar ao Menu Principal');
+    console.log('  1. Visualizar Meu Cartão');
+    console.log('  2. Solicitar Novo Cartão');
+    console.log('  3. Recarregar Cartão');
+    console.log('  4. Bloquear Cartão');
+    console.log('  5. Solicitar Segunda Via');
+    console.log('  6. Ver Extrato');
+    console.log('  0. Voltar ao Menu Principal');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -238,9 +238,9 @@ async function menuCatraca() {
 
     // Admin vê histórico e status, passageiro vê ambas opções
     if (loggedUser.tipo === 'admin') {
-      console.log('  1. 📊 Monitorar Status das Catracas');
-      console.log('  2. 📋 Ver Histórico da Catraca');
-      console.log('  0. ⬅️  Voltar ao Menu Principal');
+      console.log('  1. Monitorar Status das Catracas');
+      console.log('  2. Ver Histórico da Catraca');
+      console.log('  0. Voltar ao Menu Principal');
       printFooter();
 
       const opt = await question('Escolha uma opção: ');
@@ -258,9 +258,9 @@ async function menuCatraca() {
           await question('');
       }
     } else {
-      console.log('  1. 🚌 Simular Embarque');
-      console.log('  2. 📋 Ver Histórico da Catraca');
-      console.log('  0. ⬅️  Voltar ao Menu Principal');
+      console.log('  1. Simular Embarque');
+      console.log('  2. Ver Histórico da Catraca');
+      console.log('  0. Voltar ao Menu Principal');
       printFooter();
 
       const opt = await question('Escolha uma opção: ');
@@ -635,10 +635,10 @@ async function menuLogado() {
   
   if (loggedUser.tipo === 'empresa') {
     // Menu da Empresa
-    console.log('  1. 👤 Meu Perfil');
-    console.log('  2. 🏢 Painel de Controle da Empresa');
-    console.log('  3. 📅 Consultar Itinerários de Pelotas');
-    console.log('  0. 🚪 Sair');
+    console.log('  1. Meu Perfil');
+    console.log('  2. Painel de Controle da Empresa');
+    console.log('  3. Consultar Itinerários de Pelotas');
+    console.log('  0. Sair');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -661,14 +661,14 @@ async function menuLogado() {
     }
   } else if (loggedUser.tipo === 'admin') {
     // Menu do Administrador
-    console.log('  1. 👤 Meu Perfil');
-    console.log('  2. 🚌 Monitoramento de Catracas');
-    console.log('  3. 📋 Auditoria de Transações Financeiras');
-    console.log('  4. 📜 Auditoria de Logs do Sistema');
-    console.log('  5. 👥 Gestão de Usuários');
-    console.log('  6. 💰 Gestão de Tarifas');
-    console.log('  7. 🏢 Aprovação de Empresas');
-    console.log('  0. 🚪 Sair');
+    console.log('  1. Meu Perfil');
+    console.log('  2. Monitoramento de Catracas');
+    console.log('  3. Auditoria de Transações Financeiras');
+    console.log('  4. Auditoria de Logs do Sistema');
+    console.log('  5. Gestão de Usuários');
+    console.log('  6. Gestão de Tarifas');
+    console.log('  7. Aprovação de Empresas');
+    console.log('  0. Sair');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -703,10 +703,10 @@ async function menuLogado() {
     }
   } else if (loggedUser.tipo === 'motorista') {
     // Menu do Motorista
-    console.log('  1. 👤 Meu Perfil');
-    console.log('  2. 📅 Ver Meus Horários');
-    console.log('  3. 📋 Ver Minhas Tarefas');
-    console.log('  0. 🚪 Sair');
+    console.log('  1. Meu Perfil');
+    console.log('  2. Ver Meus Horários');
+    console.log('  3. Ver Minhas Tarefas');
+    console.log('  0. Sair');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -729,12 +729,12 @@ async function menuLogado() {
     }
   } else {
     // Menu do Passageiro Comum
-    console.log('  1. 👤 Meu Perfil');
-    console.log('  2. 💳 Gerenciar Cartões');
-    console.log('  3. 🚌 Simular Embarque (Catraca)');
-    console.log('  4. 📅 Consultar Itinerários de Pelotas');
-    console.log('  5. ✈️  Excursões e Viagens Disponíveis');
-    console.log('  0. 🚪 Sair');
+    console.log('  1. Meu Perfil');
+    console.log('  2. Gerenciar Cartões');
+    console.log('  3. Simular Embarque (Catraca)');
+    console.log('  4. Consultar Itinerários de Pelotas');
+    console.log('  5. Excursões e Viagens Disponíveis');
+    console.log('  0. Sair');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -789,12 +789,12 @@ async function assinarClubeOnBus() {
 
   try {
     const res = await request('/profile/clube', 'POST');
-    console.log(`\n${colors.fgGreen}✅ ${res.message}${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK ${res.message}${colors.reset}`);
     console.log(`Válido até: ${new Date(res.clube_expira_em).toLocaleDateString()}`);
     loggedUser.clube_status = 'ativo';
     loggedUser.clube_expira_em = res.clube_expira_em;
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro ao assinar: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro ao assinar: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');
@@ -804,12 +804,12 @@ async function menuEmpresa() {
   while (true) {
     printHeader('Painel de Controle - B2B');
     console.log(`Empresa parceira: ${colors.bright}${loggedUser.nome}${colors.reset}\n`);
-    console.log('  1. 🚌 Cadastrar Veículo na Frota');
-    console.log('  2. 📋 Listar Frota');
+    console.log('  1. Cadastrar Veículo na Frota');
+    console.log('  2. Listar Frota');
     console.log('  3. Cadastrar Motorista');
-    console.log('  4. 📋 Listar Motoristas');
-    console.log('  5. ✈️ Anunciar Nova Excursão');
-    console.log('  0. ⬅️  Voltar ao Menu Principal');
+    console.log('  4. Listar Motoristas');
+    console.log('  5. Anunciar Nova Excursão');
+    console.log('  0. Voltar ao Menu Principal');
     printFooter();
 
     const opt = await question('Escolha uma opção: ');
@@ -846,10 +846,10 @@ async function cadastrarVeiculoCLI() {
 
   try {
     const res = await request('/empresa/frotas', 'POST', { placa, modelo, ano });
-    console.log(`\n${colors.fgGreen}✅ Veículo cadastrado com sucesso na frota!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Veículo cadastrado com sucesso na frota!${colors.reset}`);
     console.log(`Placa: ${res.placa} | Modelo: ${res.modelo} | Ano: ${res.ano}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro no cadastro do veículo: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro no cadastro do veículo: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');
@@ -882,10 +882,10 @@ async function cadastrarMotoristaCLI() {
 
   try {
     const res = await request('/empresa/motoristas', 'POST', { nome, cnh });
-    console.log(`\n${colors.fgGreen}✅ Motorista cadastrado com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Motorista cadastrado com sucesso!${colors.reset}`);
     console.log(`Nome: ${res.nome} | CNH: ${res.cnh}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro no cadastro do motorista: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro no cadastro do motorista: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');
@@ -923,11 +923,11 @@ async function anunciarExcursaoCLI() {
       preco,
       patrocinio_valor: patrocinio_valor || 0
     });
-    console.log(`\n${colors.fgGreen}✅ Excursão anunciada com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Excursão anunciada com sucesso!${colors.reset}`);
     console.log(`Título: ${res.titulo} | Destino: ${res.destino} | Preço: R$ ${Number(res.preco).toFixed(2)}`);
     console.log(`Patrocínio: R$ ${Number(res.patrocinio_valor).toFixed(2)} (Prioridade no topo do feed)`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro ao anunciar: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro ao anunciar: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');
@@ -971,11 +971,11 @@ async function registrarPassageiro() {
 
   try {
     const user = await request('/auth/register', 'POST', { nome, cpf, email, senha }, false);
-    console.log(`\n${colors.fgGreen}✅ Cadastro realizado com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Cadastro realizado com sucesso!${colors.reset}`);
     console.log(`ID: ${user.id}`);
     console.log(`Tipo: ${user.tipo}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro no cadastro: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro no cadastro: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
@@ -990,9 +990,9 @@ async function loginPassageiro() {
     const data = await request('/auth/login', 'POST', { email, senha }, false);
     token = data.token;
     loggedUser = data.user;
-    console.log(`\n${colors.fgGreen}✅ Login efetuado com sucesso! Bem-vindo(a), ${loggedUser.nome}!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Login efetuado com sucesso! Bem-vindo(a), ${loggedUser.nome}!${colors.reset}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Falha no login: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Falha no login: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');
@@ -1000,8 +1000,8 @@ async function loginPassageiro() {
 
 async function recuperarSenha() {
   printHeader('Recuperar Senha');
-  console.log(`${colors.dim}Informe o e-mail ou CPF/CNPJ da conta para recuperar a senha.${colors.reset}\n`);
-  const identificador = await question('E-mail ou CPF/CNPJ: ');
+  console.log(`${colors.dim}Informe o e-mail cadastrado para receber o link de recuperação.${colors.reset}\n`);
+  const identificador = await question('E-mail: ');
 
   if (!identificador.trim()) {
     console.log(`\n${colors.fgYellow}Operação cancelada.${colors.reset}`);
@@ -1010,13 +1010,12 @@ async function recuperarSenha() {
     return;
   }
 
-  console.log(`\n${colors.fgCyan}📧 Enviando e-mail de recuperação para: ${identificador}${colors.reset}`);
-  console.log(`${colors.dim}Aguarde...${colors.reset}`);
-
-  await new Promise(r => setTimeout(r, 1500));
-
-  console.log(`\n${colors.fgGreen}✅ E-mail de recuperação enviado com sucesso!${colors.reset}`);
-  console.log(`${colors.dim}Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.${colors.reset}`);
+  try {
+    await request('/auth/forgot-password', 'POST', { email: identificador }, false);
+    console.log(`\n${colors.fgGreen}Solicitação recebida. Se o e-mail estiver cadastrado, as instruções serão enviadas.${colors.reset}`);
+  } catch (err: any) {
+    console.log(`\n${colors.fgRed}Não foi possível solicitar a recuperação: ${err.message}${colors.reset}`);
+  }
   console.log('\nPressione Enter para voltar...');
   await question('');
 }
@@ -1069,11 +1068,11 @@ async function editarPerfil() {
 
     const atualizado = await request('/profile', 'PUT', payload);
     loggedUser = atualizado;
-    console.log(`\n${colors.fgGreen}✅ Perfil atualizado com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Perfil atualizado com sucesso!${colors.reset}`);
     console.log(` Nome:   ${atualizado.nome}`);
     console.log(` E-mail: ${atualizado.email}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro ao atualizar perfil: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro ao atualizar perfil: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
@@ -1114,7 +1113,7 @@ async function solicitarCartao() {
     const cartoes = await request('/cartoes', 'GET');
     const ativo = cartoes.find((c: any) => c.status === 'ativo');
     if (ativo) {
-      console.log(`${colors.fgRed}❌ Erro na emissão: Você já possui um cartão ativo. Para solicitar um novo, é necessário bloquear o cartão atual.${colors.reset}`);
+      console.log(`${colors.fgRed}ERRO Erro na emissão: Você já possui um cartão ativo. Para solicitar um novo, é necessário bloquear o cartão atual.${colors.reset}`);
       console.log('\nPressione Enter para voltar...');
       await question('');
       return;
@@ -1145,11 +1144,11 @@ async function solicitarCartao() {
 
   try {
     const cartao = await request('/cartoes', 'POST', { tipo, themeUrl });
-    console.log(`\n${colors.fgGreen}✅ Cartão emitido com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Cartão emitido com sucesso!${colors.reset}`);
     console.log(`Número do Cartão: ${cartao.numero}`);
     console.log(`Tema: ${cartao.theme_url || 'Padrão do tipo ' + tipo}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro na emissão: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro na emissão: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');
@@ -1161,7 +1160,7 @@ async function recarregarCartao() {
     // Verificar recargas pendentes primeiro
     const pendentes = await request('/transacoes/pendentes', 'GET');
     if (pendentes && pendentes.length > 0) {
-      console.log(`${colors.fgYellow}⚠️  Você tem ${pendentes.length} recarga(s) pendente(s):${colors.reset}`);
+      console.log(`${colors.fgYellow}AVISO  Você tem ${pendentes.length} recarga(s) pendente(s):${colors.reset}`);
       pendentes.forEach((p: any, idx: number) => {
         console.log(`   ${idx + 1}. R$ ${Number(p.valor).toFixed(2)} - ${p.id.substring(0, 8)}... (${new Date(p.created_at).toLocaleString('pt-BR')})`);
       });
@@ -1185,7 +1184,7 @@ async function recarregarCartao() {
     const cartoes = await request('/cartoes', 'GET');
     const selecionado = cartoes.find((c: any) => c.status === 'ativo');
     if (!selecionado) {
-      console.log(`${colors.fgRed}❌ Erro na recarga: Você não possui nenhum cartão ativo para recarregar.${colors.reset}`);
+      console.log(`${colors.fgRed}ERRO Erro na recarga: Você não possui nenhum cartão ativo para recarregar.${colors.reset}`);
       console.log('\nPressione Enter para voltar...');
       await question('');
       return;
@@ -1203,7 +1202,7 @@ async function recarregarCartao() {
     console.log(`\n${colors.fgYellow}Gerando recarga Pix...${colors.reset}`);
     const resData = await request(`/cartoes/${selecionado.id}/recarregar`, 'POST', { valor });
     
-    console.log(`\n${colors.fgGreen}✅ Pedido de recarga Pix gerado com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Pedido de recarga Pix gerado com sucesso!${colors.reset}`);
     console.log(`Valor: R$ ${valor.toFixed(2)} | Transação ID: ${resData.transacao.id}`);
     
     const pagarAgora = await question(`\n${colors.bright}${colors.fgYellow}Simular pagamento imediato desse Pix agora? (S/N): ${colors.reset}`);
@@ -1228,15 +1227,15 @@ async function recarregarCartao() {
       });
 
       if (res.ok) {
-        console.log(`\n${colors.fgGreen}✅ Pix confirmado com sucesso! O valor de R$ ${valor.toFixed(2)} foi atribuído e creditado à sua conta.${colors.reset}`);
+        console.log(`\n${colors.fgGreen}OK Pix confirmado com sucesso! O valor de R$ ${valor.toFixed(2)} foi atribuído e creditado à sua conta.${colors.reset}`);
       } else {
-        console.log(`\n${colors.fgRed}❌ Não foi possível confirmar o Pix neste momento.${colors.reset}`);
+        console.log(`\n${colors.fgRed}ERRO Não foi possível confirmar o Pix neste momento.${colors.reset}`);
       }
     } else {
       console.log(`\n${colors.bright}${colors.fgCyan}ℹ️  Pedido mantido como PENDENTE. O valor de R$ ${valor.toFixed(2)} será atribuído à sua conta assim que a confirmação do pagamento for recebida.${colors.reset}`);
     }
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Falha na recarga: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Falha na recarga: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
@@ -1248,9 +1247,9 @@ async function pagarRecargaPendente(pendente: any) {
   try {
     console.log(`\nPagando R$ ${Number(pendente.valor).toFixed(2)} (${pendente.id.substring(0, 8)}...)...`);
     await request(`/transacoes/${pendente.id}/pagar`, 'POST');
-    console.log(`${colors.fgGreen}✅ Pago com sucesso!${colors.reset}`);
+    console.log(`${colors.fgGreen}OK Pago com sucesso!${colors.reset}`);
   } catch (err: any) {
-    console.log(`${colors.fgRed}❌ Erro ao pagar: ${err.message}${colors.reset}`);
+    console.log(`${colors.fgRed}ERRO Erro ao pagar: ${err.message}${colors.reset}`);
   }
 }
 
@@ -1260,7 +1259,7 @@ async function bloquearCartao() {
     const cartoes = await request('/cartoes', 'GET');
     const selecionado = cartoes.find((c: any) => c.status === 'ativo');
     if (!selecionado) {
-      console.log(`${colors.fgRed}❌ Erro no bloqueio: Você não possui nenhum cartão ativo para bloquear.${colors.reset}`);
+      console.log(`${colors.fgRed}ERRO Erro no bloqueio: Você não possui nenhum cartão ativo para bloquear.${colors.reset}`);
       console.log('\nPressione Enter para voltar...');
       await question('');
       return;
@@ -1270,9 +1269,9 @@ async function bloquearCartao() {
     if (conf.toUpperCase() !== 'S') return;
 
     await request(`/cartoes/${selecionado.id}/bloquear`, 'POST');
-    console.log(`\n${colors.fgGreen}✅ Cartão bloqueado com sucesso! Saldo protegido.${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Cartão bloqueado com sucesso! Saldo protegido.${colors.reset}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Falha ao bloquear: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Falha ao bloquear: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
@@ -1296,11 +1295,11 @@ async function solicitarSegundaVia() {
 
     console.log(`\n${colors.fgYellow}Processando emissão e transferência de saldo...${colors.reset}`);
     const novoCartao = await request(`/cartoes/${selecionado.id}/segunda-via`, 'POST');
-    console.log(`\n${colors.fgGreen}✅ Segunda via emitida com sucesso!${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Segunda via emitida com sucesso!${colors.reset}`);
     console.log(`Novo Cartão: ${novoCartao.numero}`);
     console.log(`Saldo recuperado e transferido: ${colors.bright}R$ ${Number(novoCartao.saldo).toFixed(2)}${colors.reset}`);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro na solicitação: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro na solicitação: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para voltar...');
   await question('');
@@ -1312,7 +1311,7 @@ async function simularCatraca() {
     const cartoes = await request('/cartoes', 'GET');
     const selecionado = cartoes.find((c: any) => c.status === 'ativo');
     if (!selecionado) {
-      console.log(`${colors.fgRed}❌ Erro: Você não possui nenhum cartão ativo para passar na catraca.${colors.reset}`);
+      console.log(`${colors.fgRed}ERRO Erro: Você não possui nenhum cartão ativo para passar na catraca.${colors.reset}`);
       console.log('\nPressione Enter para continuar...');
       await question('');
       return;
@@ -1321,7 +1320,7 @@ async function simularCatraca() {
     // Selecionar destino (catraca)
     const catracas = await request('/catracas', 'GET');
     if (catracas.length === 0) {
-      console.log(`${colors.fgRed}❌ Erro: Nenhuma catraca disponível.${colors.reset}`);
+      console.log(`${colors.fgRed}ERRO Erro: Nenhuma catraca disponível.${colors.reset}`);
       console.log('\nPressione Enter para continuar...');
       await question('');
       return;
@@ -1336,7 +1335,7 @@ async function simularCatraca() {
     const index = parseInt(opt.trim()) - 1;
     
     if (index < 0 || index >= catracas.length) {
-      console.log(`${colors.fgRed}❌ Opção inválida.${colors.reset}`);
+      console.log(`${colors.fgRed}ERRO Opção inválida.${colors.reset}`);
       console.log('\nPressione Enter para voltar...');
       await question('');
       return;
@@ -1353,7 +1352,7 @@ async function simularCatraca() {
 
     desenharPainelValidador(resultado.autorizado, resultado.tarifa, resultado.saldoAtual, resultado.mensagem, selecionado.numero, catracaSelecionada.nome);
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Erro de validação: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Erro de validação: ${err.message}${colors.reset}`);
   }
 
   console.log('\nPressione Enter para voltar...');
@@ -1531,7 +1530,7 @@ async function verItinerarios() {
       console.log(`  ${index + 1}. [${l.id}] ${l.nome}`);
     });
     console.log('');
-    console.log('  0. ⬅️  Voltar');
+    console.log('  0.   Voltar');
     printFooter();
 
     const idxStr = await question('Opção: ');
@@ -1550,18 +1549,18 @@ async function verItinerarios() {
       printHeader(`Horários - Linha ${linha.id}`);
       console.log(`${colors.bright}Linha:${colors.reset} ${linha.nome}\n`);
 
-      console.log(`${colors.fgGreen}📅 DIAS ÚTEIS:${colors.reset}`);
+      console.log(`${colors.fgGreen} DIAS ÚTEIS:${colors.reset}`);
       console.log(formatHorariosGrid(linha.dias_uteis));
       console.log('');
 
-      console.log(`${colors.fgYellow}📅 SÁBADOS:${colors.reset}`);
+      console.log(`${colors.fgYellow} SÁBADOS:${colors.reset}`);
       console.log(formatHorariosGrid(linha.sabados));
       console.log('');
 
-      console.log(`${colors.fgRed}📅 DOMINGOS:${colors.reset}`);
+      console.log(`${colors.fgRed} DOMINGOS:${colors.reset}`);
       console.log(formatHorariosGrid(linha.domingos));
       console.log('');
-      console.log('  0. ⬅️  Voltar');
+      console.log('  0.   Voltar');
       printFooter();
 
       const back = await question('Opção: ');
@@ -1589,7 +1588,7 @@ async function verHorariosMotorista() {
     const horarios = await request('/motorista/horarios', 'GET');
     console.log('\nHorários das linhas da sua empresa:\n');
     horarios.forEach((h: any) => {
-      console.log(`${colors.bright}🚌 Linha: ${h.linha}${colors.reset}`);
+      console.log(`${colors.bright} Linha: ${h.linha}${colors.reset}`);
       console.log(`   ID: ${h.linha_id}`);
       console.log(`   Horários: ${h.horarios.join(', ')}`);
       console.log('');
@@ -1607,7 +1606,7 @@ async function verTarefasMotorista() {
     const tarefas = await request('/motorista/tarefas', 'GET');
     console.log('\nViagens programadas:\n');
     tarefas.forEach((t: any) => {
-      console.log(`${colors.bright}🚗 Viagem: ${t.linha}${colors.reset}`);
+      console.log(`${colors.bright}Viagem: ${t.linha}${colors.reset}`);
       console.log(`   ID: ${t.id}`);
       console.log(`   Saída: ${t.horario_saida} | Chegada: ${t.horario_chegada}`);
       console.log(`   Veículo: ${t.veiculo}`);
@@ -1624,7 +1623,7 @@ async function verTarefasMotorista() {
 
 async function excluirContaLGPD() {
   printHeader('Direito ao Esquecimento - LGPD');
-  console.log(`${colors.bgRed}${colors.bright}  ⚠️ AVISO CRÍTICO LGPD ⚠️  ${colors.reset}\n`);
+  console.log(`${colors.bgRed}${colors.bright}  AVISO AVISO CRÍTICO LGPD AVISO  ${colors.reset}\n`);
   console.log('Esta ação excluirá permanentemente:');
   console.log('  - Suas informações cadastrais (Nome, CPF, E-mail)');
   console.log('  - Todos os seus cartões de transporte vinculados');
@@ -1646,12 +1645,12 @@ async function excluirContaLGPD() {
 
   try {
     await request('/profile/lgpd', 'DELETE');
-    console.log(`\n${colors.fgGreen}✅ Conta e todos os seus dados foram removidos permanentemente em conformidade com a LGPD.${colors.reset}`);
+    console.log(`\n${colors.fgGreen}OK Conta e todos os seus dados foram removidos permanentemente em conformidade com a LGPD.${colors.reset}`);
     token = null;
     loggedUser = null;
     currentCards = [];
   } catch (err: any) {
-    console.log(`\n${colors.fgRed}❌ Falha na exclusão: ${err.message}${colors.reset}`);
+    console.log(`\n${colors.fgRed}ERRO Falha na exclusão: ${err.message}${colors.reset}`);
   }
   console.log('\nPressione Enter para continuar...');
   await question('');

@@ -1,5 +1,6 @@
 import { db, Cartao, Transacao } from '../database/connection';
 import { randomUUID } from 'crypto';
+import { CashbackService } from './CashbackService';
 
 export class CartaoService {
   private static gerarNumeroCartao(tipo: 'comum' | 'estudante' | 'idoso'): string {
@@ -103,6 +104,8 @@ export class CartaoService {
 
   static async recarregar(cartaoId: string, valor: number): Promise<{ transacao: Transacao; pixCopiaCola: string }> {
     if (valor <= 0) throw new Error('Valor da recarga deve ser maior que zero.');
+    if (!Number.isFinite(valor) || Math.round(valor * 100) !== valor * 100) throw new Error('Valor da recarga inválido.');
+    if (!process.env.PAYMENT_API_URL || !process.env.PAYMENT_API_KEY) throw new Error('Gateway Pix não configurado; não é possível criar uma cobrança real.');
 
     const cartao = await db.cartoes.findOne({ id: cartaoId });
     if (!cartao) throw new Error('Cartão não encontrado.');
@@ -114,7 +117,6 @@ export class CartaoService {
     const transacaoId = randomUUID();
     const taxaServico = Number((valor * 0.02).toFixed(2)); // Taxa de conveniência de 2%
     
-    // Registra transação como PENDENTE (aguardando webhook do Pix)
     const novaTransacao: Transacao = {
       id: transacaoId,
       cartao_id: cartaoId,
@@ -126,11 +128,23 @@ export class CartaoService {
     };
 
     await db.transacoes.insert(novaTransacao);
+    try {
+      const response = await fetch(process.env.PAYMENT_API_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.PAYMENT_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': `onbus-pix-${transacaoId}` },
+        body: JSON.stringify({ amount: valor, currency: 'BRL', reference: transacaoId, payment_method: 'pix' }),
+      });
+      if (!response.ok) throw new Error(`Gateway Pix retornou HTTP ${response.status}.`);
+      const payment: any = await response.json();
+      if (typeof payment.pixCopiaCola !== 'string' || !payment.pixCopiaCola || typeof payment.paymentId !== 'string' || !payment.paymentId) {
+        throw new Error('Gateway não retornou paymentId e pixCopiaCola válidos.');
+      }
+      return { transacao: novaTransacao, pixCopiaCola: payment.pixCopiaCola };
+    } catch (error) {
+      await db.transacoes.update({ id: transacaoId, status: 'pendente' }, { status: 'falho' });
+      throw error;
+    }
 
-    // Pix Copia e Cola Simulado (Formato BR Code Padrão do BACEN)
-    const pixCopiaCola = `00020101021226870014br.gov.bcb.pix0136${transacaoId}@onbus.com.br5204000053039865405${valor.toFixed(2)}5802BR5909OnBus_MVP6009Pelotas_RS62290525onbus_${transacaoId.substring(0, 8)}6304`;
-
-    return { transacao: novaTransacao, pixCopiaCola };
   }
 
   static async listarPendentes(usuarioId: string): Promise<Transacao[]> {
@@ -153,33 +167,8 @@ export class CartaoService {
   }
 
   static async pagarPendente(transacaoId: string, usuarioId: string): Promise<Transacao> {
-    const transacao = await db.transacoes.findOne({ id: transacaoId });
-    if (!transacao) {
-      throw new Error('Transação não encontrada.');
-    }
-
-    if (transacao.status !== 'pendente') {
-      throw new Error(`Esta transação já foi processada anteriormente com status: ${transacao.status}`);
-    }
-
-    // Verifica se o cartão pertence ao usuário
-    const cartao = await db.cartoes.findOne({ id: transacao.cartao_id, usuario_id: usuarioId });
-    if (!cartao) {
-      throw new Error('Cartão associado à transação não encontrado ou não pertence ao usuário.');
-    }
-
-    // Libera o saldo no cartão
-    const valor = Number(transacao.valor);
-    const novoSaldo = Number(cartao.saldo) + valor;
-    await db.cartoes.update({ id: transacao.cartao_id }, { saldo: novoSaldo, updated_at: new Date().toISOString() });
-
-    // Confirma a transação
-    await db.transacoes.update({ id: transacaoId }, { status: 'confirmado' });
-
-    return {
-      ...transacao,
-      status: 'confirmado'
-    };
+    void transacaoId; void usuarioId;
+    throw new Error('Recarga só pode ser confirmada por webhook assinado do provedor de pagamento.');
   }
 
   static async processarWebhookPagamento(transacaoId: string, valor: number): Promise<Transacao> {
@@ -201,12 +190,12 @@ export class CartaoService {
       throw new Error('Cartão associado à transação não encontrado.');
     }
 
-    // Libera o saldo no cartão
-    const novoSaldo = Number(cartao.saldo) + valor;
-    await db.cartoes.update({ id: transacao.cartao_id }, { saldo: novoSaldo, updated_at: new Date().toISOString() });
-
-    // Confirma a transação
-    await db.transacoes.update({ id: transacaoId }, { status: 'confirmado' });
+    await db.knex.transaction(async (trx) => {
+      const locked = await trx('transacoes').where({ id: transacaoId, status: 'pendente' }).update({ status: 'confirmado' });
+      if (!locked) throw new Error('Transação já processada.');
+      await trx('cartoes').where({ id: transacao.cartao_id }).increment('saldo', valor).update({ updated_at: new Date().toISOString() });
+      await CashbackService.credit(trx, cartao.usuario_id, transacao.id, valor);
+    });
 
     return {
       ...transacao,

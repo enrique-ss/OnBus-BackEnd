@@ -1,5 +1,4 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { db } from '../database/connection';
 
 export interface LinhaHorarios {
   id: string;
@@ -10,24 +9,11 @@ export interface LinhaHorarios {
 }
 
 export class HorarioService {
-  static getHorarios(): LinhaHorarios[] {
-    const filePath = path.join(__dirname, '../database/horarios.json');
-    if (!fs.existsSync(filePath)) {
-      console.warn('Arquivo horarios.json não encontrado.');
-      return [];
-    }
-    
-    try {
-      const data = fs.readFileSync(filePath, 'utf8');
-      return JSON.parse(data);
-    } catch (err) {
-      console.error('Erro ao ler horarios.json:', err);
-      return [];
-    }
+  static async getHorarios(): Promise<LinhaHorarios[]> {
+    return db.knex('itinerarios').select('id', 'nome', 'dias_uteis', 'sabados', 'domingos').orderBy('nome');
   }
 
-  static getHorariosPorLinha(linhaId: string): LinhaHorarios | null {
-    const horarios = this.getHorarios();
-    return horarios.find(h => h.id.toUpperCase() === linhaId.toUpperCase()) || null;
+  static async getHorariosPorLinha(linhaId: string): Promise<LinhaHorarios | null> {
+    return (await db.knex('itinerarios').whereRaw('UPPER(??) = ?', ['id', linhaId.toUpperCase()]).first('id', 'nome', 'dias_uteis', 'sabados', 'domingos')) || null;
   }
 }
